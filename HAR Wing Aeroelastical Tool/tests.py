@@ -25,5 +25,13 @@ noh = Node(0.75, cg, inertia, 0.2, aeroParams)
 print(noh.aeroParams.clAlpha)
 print(noh.massMatrix)
 
+noh.aeroParams = aero = AeroParamsUnsteady(2, 0.5, 0, -5 * math.pi / 180, 2 * math.pi, 0.01, 0, -0.1, 0.02, 1)
+print(aero.B)
+print(noh.aeroParams.B)
 
+aero.B = np.array([[3], [4]])
+
+print(aero.B)
+print(aeroParams.B)
+print(noh.aeroParams.B)
 print('-----element------')

@@ -68,13 +68,14 @@ class AeroParamsUnsteady:
             c2[i1] = 2. / (i1+1)
 
         s2 = np.zeros((self.m, 1))
-        s3 = s2;
+        s3 = s2
 
         for i1 in range(0, self.m):
             if i1 == 0:  # TODO isso faz sentido?
                 s2[i1] = 1
             elif i1 == 1:
                 s2[i1] = 1. / 2
+
             s3[i1] = i1
 
         self.B1 = c2 @ s2.transpose() @ self.T

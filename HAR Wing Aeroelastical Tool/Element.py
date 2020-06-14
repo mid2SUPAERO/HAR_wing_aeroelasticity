@@ -8,6 +8,23 @@ class Element:
         self.strainVec = None
         self.strainPVec = None
         self.h0 = None
+        self.expG = None
+        self.exp2G = None
+        self.dexpGdEps = None
+        self.dexp2GdEps = None
+        self.Jhepp = None
+
+        self.memberJhep = None
+        self.memberJpep = None
+        self.memberJthetaep = None
+        self.memberB = None
+        self.memberJhb = None
+        self.memberJpb = None
+        self.memberJthetab = None
+        self.strainm = None
+        self.strainpm = None
+        self.strainppm = None
+        self.lambdm = None
 
         self.node1 = node1
         M1 = node1.nodeMassMatrix
@@ -64,7 +81,7 @@ class Element:
         self.strainVec = strainVec
         self.strainPVec = strainPVec  # TODO descobrir e comentar
 
-    def setH0(self, h0):  # h0 is the vector of initial deformations/deflexions
+    def setH0(self, h0):  # h0 is the vector of initial deformations/deflexions # TODO é usado?
         self.h0 = self.elemRot * h0  # eq A.1
 
     # TODO muitas funções são para um membro e não um elemento, criar classe membro e atualizar as funções que ficam aqui e que ficam la

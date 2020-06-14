@@ -1,5 +1,4 @@
 import numpy as np
-import AeroParamsUnsteady
 
 
 # TODO add comments
@@ -7,6 +6,8 @@ class Node:
     def __init__(self, linDens, coordCG, inertiaMatrix, length, aeroParams, geometry=None):
         self.aeroParams = None
         self.massMatrix = None
+        self.h = None  # TODO renomear
+        self.Jhep = None
 
         self.linDens = linDens
         self.coordCG = coordCG
