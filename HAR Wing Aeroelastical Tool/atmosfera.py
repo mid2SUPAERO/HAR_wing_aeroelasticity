@@ -1,0 +1,2 @@
+def atmosfera(H):
+    pass

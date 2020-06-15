@@ -1,6 +1,7 @@
 import math
 import numpy as np
 from scipy.linalg import expm
+from matrixcross import matrixcross
 
 from Node import Node
 from Element import Element
@@ -22,15 +23,6 @@ def hdiag(h0):  # criar lambda?
                        [np.zeros((12, 3)), h0]])
 
     return matrix
-
-
-def matrixcross(p):
-    matrix = np.array([[0, p[2], -p[1]],
-                       [-p[2], 0, p[0]],
-                       [p[1], p[0], 0]])
-
-    return matrix
-
 
 def getJhepep(strainVec, h0, length):
     Jhepep = np.zeros((12, 4, 4))

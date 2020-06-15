@@ -3,7 +3,7 @@ import math
 from scipy.linalg import block_diag
 from scipy.optimize import fsolve
 from plotaest3d import plotaest3d
-from dinamicafex import dinamicaflex
+from dinamicaflex import dinamicaflex
 from Fuselage import Fuselage
 
 
