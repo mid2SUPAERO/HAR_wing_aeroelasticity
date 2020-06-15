@@ -56,7 +56,7 @@ class AeroParamsUnsteady:
         self.C = np.zeros((self.m, self.m))
 
         if self.m >= 1:
-            self.C[0, 0] = 1.;
+            self.C[0, 0] = 1.
         if self.m >= 2:
             self.C[0, 1] = 1.
             self.C[1, 0] = -1. / 2
@@ -110,4 +110,4 @@ class AeroParamsUnsteady:
         self.B = b
         self.Bm = 1 / 2 * self.C @ np.block([[1], [np.zeros((self.m - 1, 1))]]) @ b.transpose()  # TODO esta certo?
         self.A = D + d @ b.transpose() + c @ d.transpose() + (1 / 2) * c @ b.transpose()
-        print(D)
+

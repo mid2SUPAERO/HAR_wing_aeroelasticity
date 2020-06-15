@@ -24,6 +24,7 @@ def hdiag(h0):  # criar lambda?
 
     return matrix
 
+
 def getJhepep(strainVec, h0, length):
     Jhepep = np.zeros((12, 4, 4))
     delta = 1e-5
