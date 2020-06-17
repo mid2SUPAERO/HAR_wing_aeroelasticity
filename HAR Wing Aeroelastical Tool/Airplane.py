@@ -2,6 +2,9 @@ import numpy as np
 import math
 from scipy.linalg import block_diag
 from scipy.optimize import fsolve
+from assimulo.problem import Implicit_Problem
+from assimulo.solvers import IDA
+
 from plotaest3d import plotaest3d
 from dinamicaflex import dinamicaflex
 from Fuselage import Fuselage
@@ -59,6 +62,42 @@ def equilibratudo(vec, strain, strainp, strainpp, lambd, beta, betap, kinetic, a
     zero = np.array([[Xp], [bp[2]], [bp[3]], [bp[4]]])
 
     return zero
+
+
+def dinamicaflexODEimplicit(t, x, xp, parameters):  # TODO resolver
+    ap = parameters[0]
+    V = parameters[1]
+    manete = parameters[2]
+    deltaflap = parameters[3]
+
+    strain = x[0:ap.NUMele * 4]
+    strainp = x[(ap.NUMele * 4):(ap.NUMele * 4 * 2)]
+    lambd = x[(ap.NUMele * 4 * 2): (ap.NUMele * 4 * 2 + ap.NUMaedstates)]
+    beta = x[(ap.NUMele * 4 * 2 + ap.NUMaedstates):(ap.NUMele * 4 * 2 + ap.NUMaedstates + 6)]
+    kinetic = x[(ap.NUMele * 4 * 2 + ap.NUMaedstates + 6):(ap.NUMele * 4 * 2 + ap.NUMaedstates + 10)]
+    strainpn = xp[0:ap.NUMele * 4]
+    strainpp = xp[(ap.NUMele * 4):ap.NUMele * 4 * 2]
+
+    if ap.NUMaedstates == 0:
+        lambdap = np.array([])
+    else:
+        lambdap = xp[(ap.NUMele * 4 * 2):(ap.NUMele * 4 * 2 + ap.NUMaedstates)]
+
+    betap = xp[(ap.NUMele * 4 * 2 + ap.NUMaedstates):(ap.NUMele * 4 * 2 + ap.NUMaedstates + 6)]
+    kineticp = xp[(ap.NUMele * 4 * 2 + ap.NUMaedstates + 6):(ap.NUMele * 4 * 2 + ap.NUMaedstates + 10)]
+
+    FLAG = 1
+    strainppn, bpn, lambdapn, kineticpn = dinamicaflex(t, strain.transpose(), strainp.transpose(),
+                                                       strainpp.transpose(), lambd, beta, betap,
+                                                       kinetic.transpose(), ap, V, manete, deltaflap, FLAG)
+
+    if ap.NUMaedstates == 0:
+        f = np.block([[(-strainpn + strainp)], [(strainppn - strainpp)], [(bpn - betap)], [(kineticpn - kineticp)]])
+    else:
+        f = np.block([[(-strainpn + strainp)], [(strainppn - strainpp)], [(lambdapn - lambdap)], [(bpn - betap)],
+                      [(kineticpn - kineticp)]])
+
+    return f
 
 
 class Airplane:
@@ -183,14 +222,7 @@ class Airplane:
     def airplanemovie(self):  # ah mas vai pass ar ainda por muito tempo
         pass
 
-    def dinamicaflexODEimplicit(self): # TODO resolver
-        pass
-
-    def dinamicaflexODE(self):
-        pass
-
-
-    def linearize(self, straineq, betaeq, keq, manete, deltaflap, Vwind):
+    def linearize(self, straineq, betaeq, keq, manete, deltaflap, Vwind): #TODO ajeitar
 
         if self.NUMaedstates == 0:
             lambda0 = []
@@ -210,18 +242,18 @@ class Airplane:
         Mlin = np.eye((self.NUMaedstates + straineq.shape[1] * 2 + 10))
 
         for i in range(0, xp.shape[0]):
-            soma = Airplane.dinamicaflexODEimplicit(self, 0, x + veclin(i, x.shape[0]).tanspose() * delta, xp, Vwind,
-                                                    manete, deltaflap)
-            subtr = Airplane.dinamicaflexODEimplicit(self, 0, x - veclin(i, x.shape[0]).tanspose() * delta, xp, Vwind,
-                                                     manete, deltaflap)
+            soma = dinamicaflexODEimplicit(0, x + veclin(i, x.shape[0]).tanspose() * delta, xp, Vwind,
+                                           manete, deltaflap)
+            subtr = dinamicaflexODEimplicit(0, x - veclin(i, x.shape[0]).tanspose() * delta, xp, Vwind,
+                                            manete, deltaflap)
 
             if (i >= (straineq.shape[1] + 1)) and (i <= (straineq.shape[1] * 2)) or (
                     (i >= self.NUMaedstates + straineq.shape[1] * 2 + 1) and (
                     i <= self.NUMaedstates + straineq.shape[1] * 2 + 6)):  # TODO talvez precise alterar esse i
-                somap = Airplane.dinamicaflexODEimplicit(self, 0, x, xp + veclin(i, x.shape[0]).tanspose() * delta,
-                                                         Vwind, manete, deltaflap)
-                subtrp = Airplane.dinamicaflexODEimplicit(self, 0, x, xp - veclin(i, x.shape[0]).tanspose() * delta,
-                                                          Vwind, manete, deltaflap)
+                somap = dinamicaflexODEimplicit(0, x, xp + veclin(i, x.shape[0]).tanspose() * delta,
+                                                Vwind, manete, deltaflap)
+                subtrp = dinamicaflexODEimplicit(0, x, xp - veclin(i, x.shape[0]).tanspose() * delta,
+                                                 Vwind, manete, deltaflap)
                 Mlin[:, i] = -(somap - subtrp) / (2 * delta)
 
             Alin[:, i] = (soma - subtr) / (2 * delta)
@@ -303,9 +335,22 @@ class Airplane:
 
         xp0 = np.zeros(x0.shape)
 
-        # options = odeset('OutputFcn', @ odeprog, 'Events', 'MaxStep', 0.10)
         # TODO resolver a treta da ode
-        # [t, X] = ode15i( @ (t, x, xp) dinamicaflexODEimplicit(t, x, xp, ap, Vwind, manete(t), deltaflap(t)), tspan, x0, xp0, options);
+        # t,X = ode15i( @ (t, x, xp) dinamicaflexODEimplicit(t, x, xp, ap, Vwind, manete(t), deltaflap(t)), tspan, x0, xp0, options);
+
+        t0 = tspan[0]  # Initial time
+        params = np.array([self, Vwind, manete, deltaflap])
+
+        model = Implicit_Problem(dinamicaflexODEimplicit, x0, xp0, t0, p0=params)  # Create an Assimulo problem
+        model.name = 'Flight simulation'  # Specifies the name of problem (optional)
+
+        sim = IDA(model)
+        tfinal = tspan[1]  # Specify the final time
+        ncp = 100  # Number of communication points (number of return points)
+
+        t, X, Xp = sim.simulate(tfinal, ncp)
+
+        X = np.block([[X], [Xp]])  # TODO verificar isso aqui com o codigo original, precisa transpor? dimensão de X
 
         strain = X[:, 0: self.NUMele * 4]
         strainp = X[:, self.NUMele * 4: 2 * self.NUMele * 4]
@@ -314,4 +359,3 @@ class Airplane:
         kinetic = X[:, 2 * self.NUMele * 4 + self.NUMaedstates + 6: 2 * self.NUMele * 4 + self.NUMaedstates + 10]
 
         return t, strain, strainp, lambd, beta, kinetic
-

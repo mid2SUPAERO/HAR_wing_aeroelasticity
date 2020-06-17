@@ -1,9 +1,9 @@
 import numpy as np
-import math
+from math import sin, cos
 
 
 class Engine:
-    def __init__(self, numPI, numMEMB, numELEM, numNODE, Fmax = 0, rho0 = 1, V0 = 1, nrho = 0, nv = 0, alphaf = 0, betaf = 0):
+    def __init__(self, numPI, numMEMB, numELEM, numNODE, Fmax=0, rho0=1, V0=1, nrho=0, nv=0, alphaf=0, betaf=0):
         self.numPI = numPI
         self.numMEMB = numMEMB
         self.numELEM = numELEM
@@ -17,17 +17,15 @@ class Engine:
         self.betaf = betaf
         self.NODEpos = None
 
-# TODO falta corrigir essa função
-
-'''
-    def getFPROP(self, ap, manete, rho, U): 
+    def getFPROP(self, ap, manete, rho, U):
         FPROP = np.zeros((ap.NUMele * 9, 1))
 
-
-
-        for i = 1:size(prop, 2)
-            Cwb = np.array([[1, 0, 0], [0, math.cos(self.alphaf), -math.sin(self.alphaf)],[ 0, math.sin(self.alphaf), math.cos(self.alphaf)]])@np.array([[math.cos(self.betaf), -math.sin(self.betaf), 0],[ math.sin(self.betaf), math.cos(self.betaf), 0],[ 0, 0, 1]])
+        for i in range(0, ap.prop.shape[1]):  # TODO checar esse loop
+            Cwb = np.array([[1, 0, 0], [0, cos(self.alphaf), -sin(self.alphaf)],
+                            [0, sin(self.alphaf), cos(self.alphaf)]]) @ np.array(
+                [[cos(self.betaf), -sin(self.betaf), 0], [sin(self.betaf), cos(self.betaf), 0], [0, 0, 1]])
             CBb = np.eye(3) @ Cwb
 
-        FPROP[(3 * (prop[i].NODEpos)): (3 + 3 * (prop[i].NODEpos))] = CBb * np.array([[0],[manete(prop(i).numPI) * Fmax * (U / V0) ^ nv * (rho / rho0) ^ nrho],[0]])
-'''
+            FPROP[(3 * ap.prop[i].NODEpos): (3 + 3 * ap.prop[i].NODEpos)] = CBb @ np.array([[0], [
+                manete[ap.prop[i].numPI - 1] * self.Fmax * (U / self.V0) ** self.nv * (rho / self.rho0) ** self.nrho],
+                                                                                            [0]])
