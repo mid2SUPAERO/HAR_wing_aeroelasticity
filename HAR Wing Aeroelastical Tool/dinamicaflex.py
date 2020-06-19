@@ -8,16 +8,14 @@ from getJhbp import getJhpb
 from aeroforceandmoment import aeroforceandmoment
 
 
-# TODO matlab precisa colocar o tempo, mas aqui é necessario?
 def dinamicaflex(t, strain, strainp, strainpp, lambd, beta, betap, kinetic, ap, V, manete, deltaflap, FLAG):
-    H = kinetic[4]
+    H = kinetic[3]
     isEQ = None
     isIMPLICIT = None
 
     g = 9.80665  # m/s**2 standard earth gravity
     rho = atmosfera(H)
 
-    # TODO verificar se todos são necessarios
     if FLAG == 0:
         isEQ = 1
 
@@ -60,24 +58,30 @@ def dinamicaflex(t, strain, strainp, strainpp, lambd, beta, betap, kinetic, ap, 
     FLAMBDA = np.array([])
 
     for i in range(0, ap.NUMmembers):
-        [FAEROm, MAEROm, FLAMBDAm] = aeroforceandmoment(ap.members[i].elementsVector[1].strainm,
-                                                        ap.members[i].elementsVector[1].strainpm,
-                                                        ap.members[i].elementsVector[1].strainppm,
-                                                        ap.members[i].elementsVector[1].lambdam, beta, betap,
+        [FAEROm, MAEROm, FLAMBDAm] = aeroforceandmoment(ap.members[i].elementsVector[0].strainm,
+                                                        ap.members[i].elementsVector[0].strainpm,
+                                                        ap.members[i].elementsVector[0].strainppm,
+                                                        ap.members[i].elementsVector[0].lambdm, beta, betap,
                                                         ap.members[i], V, rho, deltaflap)
 
-        FAERO = np.block([[FAERO], [FAEROm]])
-        MAERO = np.block([[MAERO], [MAEROm]])
-        FLAMBDA = np.block([[FLAMBDA], [FLAMBDAm]])
+        if i == 0:
+            FAERO = FAEROm
+            MAERO = MAEROm
+            FLAMBDA = FLAMBDAm
+        else:
+            FAERO = np.block([[FAERO], [FAEROm]])
+            MAERO = np.block([[MAERO], [MAEROm]])
+            FLAMBDA = np.block([[FLAMBDA], [FLAMBDAm]])
+
 
     U = beta[2]
 
-    FPROP = ap.prop.getFPROP(ap, manete, rho, U)
+    FPROP = ap.prop[0].getFPROP(ap, manete, rho, U) # TODO [0] considera apenas um motor, modificar dps
 
-    theta = kinetic[1]
-    phi = kinetic[2]
-    psi = kinetic[3]
-    H = kinetic[4]  # TODO de novo? necessario?
+    theta = kinetic[0]
+    phi = kinetic[1]
+    psi = kinetic[2]
+    H = kinetic[3]  # TODO de novo? necessario?
 
     GX = g * math.sin(phi) * math.cos(theta)
     GY = -g * math.sin(theta)
@@ -99,7 +103,7 @@ def dinamicaflex(t, strain, strainp, strainpp, lambd, beta, betap, kinetic, ap, 
                     np.block([-CFF, -CFB], [-CBF, -CBB]) @ np.block([[strainp.transpose()], [beta]]) - np.block(
                 [[KFF @ strain.transpose()], [np.zeros((6, 1))]]) + np.block([[RAEROF], [RAEROB]])))
             xp = xpbp[0:ap.NUMele * 4]
-            bp = xpbp[(ap.NUMele * 4):(ap.NUMele * 4 + 6)] * np.linalg.solve.transpose()
+            bp = xpbp[(ap.NUMele * 4):(ap.NUMele * 4 + 6)] * np.array([1, 1, 1, 1, 1, 1]).transpose()
     else:
         xp = - KFF @ strain.transpose() + RAEROF
         bp = + RAEROB * np.array([1, 1, 1, 1, 1, 1]).transpose()

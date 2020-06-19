@@ -11,7 +11,7 @@ def atmosfera(H):
     if H <= 11000:
         rho = rho0 * (temperatura(H) / T0) ** (-(1 + g0 / (R * L)))
     else:
-        rho = rho0 * (temperatura(11000) / T0) ^ (-(1 + g0 / (R * L))) * exp(
+        rho = rho0 * (temperatura(11000) / T0) ** (-(1 + g0 / (R * L))) * exp(
             -g0 * (H - 11000) / (R * temperatura(11000)))
 
     return rho

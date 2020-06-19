@@ -49,7 +49,7 @@ def getJhep(strainVec, h0, length):  # TODO mudar nome
 
 def getnumJhep(strainVec, h0, length):  # TODO mudar nome
     delta = 1e-5
-    Jhep = np.zeros((1000, 4))  # TODO rodar testes e corrigir o valor de linhas
+    Jhep = np.zeros((1000, 4))  # TODO rodar testes e corrigir o valor de linhas IMPORTANTE!!!
 
     for i in range(0, 4):
         expG, dexpGdeps = getnumexpG(strainVec + delta * veclin(i), length / 2)
@@ -83,7 +83,7 @@ def getnumexpG(strainVec, length):  # TODO mudar nome
     return expG, dexpGdeps
 
 
-def product3dXvec(A, v):  # TODO checar
+def product3dXvec(A, v):  # TODO checar IMPORTANTE!!!
     matrix = np.zeros((A.shape[1], A.shape[2]))
 
     for i in range(0, A.shape[0]):
@@ -96,7 +96,7 @@ class Structure:
     def __init__(self, numOfElems):
         self.numOfElems = numOfElems
         self.elemPos = 0
-        self.elementsVector = np.zeros((self.numOfElems, 1))  # TODO alterar para linha?
+        self.elementsVector = [0] * self.numOfElems  # np.zeros((self.numOfElems, 1))
         self.Jhep = None
         self.Jpep = None
         self.Jthetaep = None
@@ -109,7 +109,7 @@ class Structure:
 
     def addElem(self, elem):
         self.elementsVector[self.elemPos] = elem
-        self.elementsVector[self.elemPos].setStrain(np.zeros((1, 3)), np.zeros(1, 3))
+        self.elementsVector[self.elemPos].setStrain(np.zeros((1, 4)), np.zeros((1, 4)))
         self.elemPos += 1  # TODO adicionar erro se elemenPos>numOfElems
 
     def update(self):
@@ -131,15 +131,15 @@ class Structure:
                 self.elementsVector[ii].h0 = self.elementsVector[ii].elemRot @ self.elementsVector[ii - 1].node3.h
 
             self.elementsVector[ii].node1.h = self.elementsVector[ii].h0
-            self.elementsVector[ii].node2.h = self.elementsVector[ii].expG * self.elementsVector[ii].h0
-            self.elementsVector[ii].node3.h = self.elementsVector[ii].exp2G * self.elementsVector[ii].h0
+            self.elementsVector[ii].node2.h = self.elementsVector[ii].expG @ self.elementsVector[ii].h0
+            self.elementsVector[ii].node3.h = self.elementsVector[ii].exp2G @ self.elementsVector[ii].h0
 
     def setJhep2(self):  # TODO mudar nome
         for ii in range(0, self.numOfElems):
             h0 = hdiag(self.elementsVector[ii].h0)
             self.elementsVector[ii].node1.Jhep = np.zeros((12, 4))
-            self.elementsVector[ii].node2.Jhep = self.elementsVector[ii].dexpGdEps * h0
-            self.elementsVector[ii].node3.Jhep = self.elementsVector[ii].dexp2GdEps * h0
+            self.elementsVector[ii].node2.Jhep = self.elementsVector[ii].dexpGdEps @ h0
+            self.elementsVector[ii].node3.Jhep = self.elementsVector[ii].dexp2GdEps @ h0
             self.elementsVector[ii].Jhep = np.block([[self.elementsVector[ii].node1.Jhep],
                                                      [self.elementsVector[ii].node2.Jhep],
                                                      [self.elementsVector[ii].node3.Jhep]])
@@ -160,13 +160,13 @@ class Structure:
                 if ii == jj:
                     h0 = hdiag(self.elementsVector[ii].h0)
                     Jhep1 = np.zeros((12, 4))
-                    Jhep2 = self.elementsVector[ii].dexpGdEps * h0
-                    Jhep3 = self.elementsVector[ii].dexp2GdEps * h0
+                    Jhep2 = self.elementsVector[ii].dexpGdEps @ h0
+                    Jhep3 = self.elementsVector[ii].dexp2GdEps @ h0
                     Jhep[(ii * 36): (ii * 36 + 36), (jj * 4): (jj * 4 + 4)] = np.block([[Jhep1], [Jhep2], [Jhep3]])
 
                 elif ii > jj:
                     Jhep[(ii * 36): (ii * 36 + 12), (jj * 4): (jj * 4 + 4)] = self.elementsVector[ii].elemRot @ \
-                                                                              Jhep[(ii * 36 + 24): (ii * 36 + 36),
+                                                                              Jhep[((ii-1) * 36 + 24): ((ii-1) * 36 + 36),
                                                                               (jj * 4): (jj * 4 + 4)]
                     Jhep[(ii * 36 + 12): (ii * 36 + 24), (jj * 4): (jj * 4 + 4)] = self.elementsVector[ii].expG @ \
                                                                                    Jhep[(ii * 36): (ii * 36 + 12),
@@ -220,6 +220,8 @@ class Structure:
                                                                           [matrixcross(wy)],
                                                                           [matrixcross(wz)]])
 
+            return Jhb
+
     def getJpb(self, Jhb):
         Jpbeta = np.zeros((self.numOfElems * 9, 6))
         for i in range(0, self.numOfElems * 3):
@@ -228,7 +230,7 @@ class Structure:
         return Jpbeta
 
     def getJthetab(self):
-        Jthetabeta = np.zeros((self.numOfElems * 3, 6));
+        Jthetabeta = np.zeros((self.numOfElems * 9, 6))
 
         for i in range(0, self.numOfElems):
             Jthetabeta[(9 * i): (9 + 9 * i), 3: 6] = np.block([[np.eye(3)], [np.eye(3)], [np.eye(3)]])
@@ -236,8 +238,8 @@ class Structure:
         return Jthetabeta
 
     def getJpep(self, Jhep):
-        size = Jhep.shape[1] / 4  # TODO verificar se não é shape[0]
-        Jpep = np.zeros((size * 3, size * 4))
+        size = int(Jhep.shape[1] / 4)
+        Jpep = np.zeros((size * 3*3, size * 4))
 
         for i in range(0, size * 3):
             Jpep[(i * 3): (3 + i * 3), :] = Jhep[(i * 12): (3 + i * 12), :]
@@ -248,7 +250,7 @@ class Structure:
         Me = np.zeros((self.numOfElems * 36, self.numOfElems * 36))
 
         for i in range(0, self.numOfElems):
-            Me[(i * 36): (i * 36 + 36), (i * 36): (i * 36 + 36)] = self.elementsVector[i].Me
+            Me[(i * 36): (i * 36 + 36), (i * 36): (i * 36 + 36)] = self.elementsVector[i].Melem
 
         return Me
 
@@ -256,7 +258,7 @@ class Structure:
         N = np.zeros((self.numOfElems * 36, 3))
 
         for i in range(0, self.numOfElems):
-            N[(i * 36): (i * 36 + 36), 0: 3] = self.elementsVector[i].Ne
+            N[(i * 36): (i * 36 + 36), 0: 3] = self.elementsVector[i].Nelem
 
         return N
 
@@ -264,7 +266,7 @@ class Structure:
         K = np.zeros((self.numOfElems * 4, self.numOfElems * 4))
 
         for i in range(0, self.numOfElems):
-            K[(i * 4): (i * 4 + 4), (i * 4): (i * 4 + 4)] = self.elementsVector[i].Ksection
+            K[(i * 4): (i * 4 + 4), (i * 4): (i * 4 + 4)] = self.elementsVector[i].K
 
         return K
 
@@ -272,20 +274,19 @@ class Structure:
         C = np.zeros((self.numOfElems * 4, self.numOfElems * 4))
 
         for i in range(0, self.numOfElems):
-            C[(i * 4): (i * 4 + 4), (i * 4): (i * 4 + 4)] = self.elementsVector[i].Csection
-
+            C[(i * 4): (i * 4 + 4), (i * 4): (i * 4 + 4)] = self.elementsVector[i].C
         return C
 
-    def getB(self, struc):  # TODO verificar esse struc depois
+    def getB(self):
         Bfe = np.block([[np.eye(3) * 1 / 3, np.eye(3) * 1 / 6, np.zeros((3, 3))],
                         [np.eye(3) * 1 / 6, np.eye(3) * 2 / 3, np.eye(3) * 1 / 6],
                         [np.zeros((3, 3)), np.eye(3) * 1 / 6, np.eye(3) * 1 / 3]])
         Bf = np.zeros((self.numOfElems * 9, self.numOfElems * 9))
 
         for i in range(0, self.numOfElems):
-            Bf[(i * 9): (i * 9 + 9), (i * 9): (i * 9 + 9)] = 0.5 * struc(i).length * Bfe
+            Bf[(i * 9): (i * 9 + 9), (i * 9): (i * 9 + 9)] = 0.5 * self.elementsVector[i].length * Bfe
 
-    def getJthetaep(self, struc, Jhep):  # TODO verificar esse struc depois
+    def getJthetaep(self, Jhep):
         Jthetaep = np.zeros((self.numOfElems * 9, self.numOfElems * 4))
 
         for i in range(0, self.numOfElems):
@@ -293,33 +294,46 @@ class Structure:
                 for j in range(0, 4):
                     if i >= ii:
                         # node 1
-                        dtdepz = Jhep[(3 + i * 36):(6 + i * 36), j + ii * 4].transpose() @ struc[i].node1.h[6:9]
-                        dtdepx = Jhep[(6 + i * 36):(9 + i * 36), j + ii * 4].transpose() @ struc[i].node1.h[9:12]
-                        dtdepy = Jhep[(9 + i * 36):(12 + i * 36), j + ii * 4].transpose() @ struc[i].node1.h[3:6]
+                        dtdepz = Jhep[(3 + i * 36):(6 + i * 36), j + ii * 4].transpose() @ self.elementsVector[
+                                                                                               i].node1.h[6:9]
+                        dtdepx = Jhep[(6 + i * 36):(9 + i * 36), j + ii * 4].transpose() @ self.elementsVector[
+                                                                                               i].node1.h[9:12]
+                        dtdepy = Jhep[(9 + i * 36):(12 + i * 36), j + ii * 4].transpose() @ self.elementsVector[
+                                                                                                i].node1.h[3:6]
                         dtdex1 = np.block(
-                            [struc[i].node1.h[3:6], struc[i].node1.h[6: 9], struc[i].node1.h[9: 12]]) @ np.block(
+                            [self.elementsVector[i].node1.h[3:6], self.elementsVector[i].node1.h[6: 9],
+                             self.elementsVector[i].node1.h[9: 12]]) @ np.block(
                             [[dtdepx], [dtdepy], [dtdepz]])
 
                         # node 2
-                        dtdepz = Jhep[(3 + 12 + i * 36):(6 + 12 + i * 36), j + ii * 4].transpose() @ struc[i].node2.h[
-                                                                                                     6:9]
-                        dtdepx = Jhep[(6 + 12 + i * 36):(9 + 12 + i * 36), j + ii * 4].transpose() @ struc[i].node2.h[
-                                                                                                     9:12]
-                        dtdepy = Jhep[(9 + 12 + i * 36):(12 + 12 + i * 36), j + ii * 4].transpose() @ struc[i].node2.h[
-                                                                                                      3:6]
+                        dtdepz = Jhep[(3 + 12 + i * 36):(6 + 12 + i * 36), j + ii * 4].transpose() @ \
+                                 self.elementsVector[i].node2.h[
+                                 6:9]
+                        dtdepx = Jhep[(6 + 12 + i * 36):(9 + 12 + i * 36), j + ii * 4].transpose() @ \
+                                 self.elementsVector[i].node2.h[
+                                 9:12]
+                        dtdepy = Jhep[(9 + 12 + i * 36):(12 + 12 + i * 36), j + ii * 4].transpose() @ \
+                                 self.elementsVector[i].node2.h[
+                                 3:6]
                         dtdex2 = np.block(
-                            [struc[i].node2.h[3:6], struc[i].node2.h[6: 9], struc[i].node2.h[9: 12]]) @ np.block(
+                            [self.elementsVector[i].node2.h[3:6], self.elementsVector[i].node2.h[6: 9],
+                             self.elementsVector[i].node2.h[9: 12]]) @ np.block(
                             [[dtdepx], [dtdepy], [dtdepz]])
 
                         # node 3
-                        dtdepz = Jhep[(3 + 24 + i * 36):(6 + 24 + i * 36), j + ii * 4].transpose() @ struc[i].node3.h[
-                                                                                                     6:9]
-                        dtdepx = Jhep[(6 + 24 + i * 36):(9 + 24 + i * 36), j + ii * 4].transpose() @ struc[i].node3.h[
-                                                                                                     9:12]
-                        dtdepy = Jhep[(9 + 24 + i * 36):(12 + 24 + i * 36), j + ii * 4].transpose() @ struc[i].node3.h[
-                                                                                                      3:6]
-                        dtdex3 = np.block(
-                            [struc[i].node3.h[3:6], struc[i].node3.h[6: 9], struc[i].node3.h[9: 12]]) @ np.block(
+                        dtdepz = Jhep[(3 + 24 + i * 36):(6 + 24 + i * 36), j + ii * 4].transpose() @ \
+                                 self.elementsVector[i].node3.h[6:9]
+                        dtdepx = Jhep[(6 + 24 + i * 36):(9 + 24 + i * 36), j + ii * 4].transpose() @ \
+                                 self.elementsVector[i].node3.h[9:12]
+                        dtdepy = Jhep[(9 + 24 + i * 36):(12 + 24 + i * 36), j + ii * 4].transpose() @ \
+                                 self.elementsVector[i].node3.h[3:6]
+                        dtdex3 = np.block([self.elementsVector[i].node3.h[3:6], self.elementsVector[i].node3.h[6: 9],
+                                           self.elementsVector[i].node3.h[9: 12]]) @ np.block(
                             [[dtdepx], [dtdepy], [dtdepz]])
 
-                        Jthetaep[(i * 9): (i * 9 + 9), (ii * 4 + j)] = np.block([[dtdex1], [dtdex2], [dtdex3]])
+                        print(Jthetaep[(i * 9): (i * 9 + 9), (ii * 4 + j)])
+                        print(np.block([[dtdex1], [dtdex2], [dtdex3]]))
+
+                        Jthetaep[(i * 9): (i * 9 + 9), (ii * 4 + j)] = np.block([dtdex1.T, dtdex2.T, dtdex3.T])
+
+        return Jthetaep

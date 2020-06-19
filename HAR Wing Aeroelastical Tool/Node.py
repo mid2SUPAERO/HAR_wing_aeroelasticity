@@ -1,4 +1,11 @@
 import numpy as np
+from AeroParamsUnsteady import AeroParamsUnsteady
+
+
+class Geometry:
+    def __init__(self, a, b):
+        self.a = a
+        self.b = b
 
 
 # TODO add comments
@@ -13,9 +20,13 @@ class Node:
         self.coordCG = coordCG
         self.inertiaMatrix = inertiaMatrix
         self.length = length
-        self.geometry = geometry  # TODO verificar depois
 
-        self.aeroParams = aeroParams
+        if geometry is None:
+            self.geometry = None
+        else:
+            self.geometry = Geometry(geometry[0], geometry[1])  # TODO verificar depois
+
+        self.aeroParams = AeroParamsUnsteady(aeroParams.N, aeroParams.b, aeroParams.a, aeroParams.alpha0, aeroParams.clalpha, aeroParams.cldelta, aeroParams.cm0, aeroParams.cmdelta, aeroParams.cd0, aeroParams.ndelta)
 
         Node.calcMassMatrix(self)
 

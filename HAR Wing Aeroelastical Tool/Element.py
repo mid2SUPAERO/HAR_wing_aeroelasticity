@@ -27,13 +27,13 @@ class Element:
         self.lambdm = None
 
         self.node1 = node1
-        M1 = node1.nodeMassMatrix
+        M1 = node1.massMatrix
 
         self.node2 = node2
-        M2 = node2.nodeMassMatrix
+        M2 = node2.massMatrix
 
         self.node3 = node3
-        M3 = node3.nodeMassMatrix
+        M3 = node3.massMatrix
 
         self.length = length
 
@@ -43,14 +43,14 @@ class Element:
         self.Melem = 0.5 * self.length * np.block(
             [[(1 / 4 * M1 + 1 / 12 * M2), (1 / 12 * M1 + 1 / 12 * M2), np.zeros((12, 12))],
              [(1 / 12 * M1 + 1 / 12 * M2), (1 / 12 * M1 + 1 / 2 * M2 + 1 / 12 * M3), (1 / 12 * M2 + 1 / 12 * M3)],
-             [(np.zeros((12, 12)), (1 / 12 * M2 + 1 / 12 * M3), (1 / 12 * M2 + 1 / 4 * M3))]])  # eq 3.34
+             [np.zeros((12, 12)), (1 / 12 * M2 + 1 / 12 * M3), (1 / 12 * M2 + 1 / 4 * M3)]])  # eq 3.34
         # TODO verificar se precisa add rigid
 
         # normal N
 
-        N1 = node1.nodeMassMatrix[:, 0:2].copy()
-        N2 = node2.nodeMassMatrix[:, 0:2].copy()
-        N3 = node3.nodeMassMatrix[:, 0:2].copy()
+        N1 = node1.massMatrix[:, 0:3].copy()
+        N2 = node2.massMatrix[:, 0:3].copy()
+        N3 = node3.massMatrix[:, 0:3].copy()
 
         self.Nelem = 0.5 * self.length * np.block(
             [[1 / 3 * N1 + 1 / 6 * N2],
@@ -68,11 +68,11 @@ class Element:
                             [0., 1., 0.],
                             [-math.sin(rot.dihedral), 0., math.cos(rot.dihedral)]])  # eq A.13
         self.elemRot = np.block([[np.eye(3), np.zeros((3, 9))],
-                                 [np.zeros(3, 3), np.eye(3) @ geomRot[0, 0], np.eye(3) * geomRot[0, 1],
+                                 [np.zeros((3, 3)), np.eye(3) * geomRot[0, 0], np.eye(3) * geomRot[0, 1],
                                   np.eye(3) * geomRot[0, 2]],
-                                 [np.zeros(3, 3), np.eye(3) @ geomRot[1, 0], np.eye(3) * geomRot[1, 1],
+                                 [np.zeros((3, 3)), np.eye(3) * geomRot[1, 0], np.eye(3) * geomRot[1, 1],
                                   np.eye(3) * geomRot[1, 2]],
-                                 [np.zeros(3, 3), np.eye(3) @ geomRot[2, 0], np.eye(3) * geomRot[2, 1],
+                                 [np.zeros((3, 3)), np.eye(3) * geomRot[2, 0], np.eye(3) * geomRot[2, 1],
                                   np.eye(3) * geomRot[2, 2]]])  # eq A.12
 
     # ------------- # ------------- METHODS ------------- # ------------- #
@@ -81,7 +81,7 @@ class Element:
         self.strainVec = strainVec
         self.strainPVec = strainPVec  # TODO descobrir e comentar
 
-    def setH0(self, h0):  # h0 is the vector of initial deformations/deflexions # TODO é usado?
-        self.h0 = self.elemRot * h0  # eq A.1
+    def setH0(self, h0):  # h0 is the vector of initial deformations/deflexions
+        self.h0 = self.elemRot @ h0  # eq A.1
 
-    # TODO muitas funções são para um membro e não um elemento, criar classe membro e atualizar as funções que ficam aqui e que ficam la
+

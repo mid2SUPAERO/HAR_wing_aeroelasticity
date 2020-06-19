@@ -1,14 +1,15 @@
 import numpy as np
+from matrixcross import matrixcross
 
 
 class Fuselage:
-    def __init__(self, m, pcm, I, ttpcm):
+    def __init__(self, m, pcm, I):
         self.m = m
         self.pcm = pcm
         self.I = I
-        self.ttpcm = matrixcross(pcm)  # TODO corrigir
+        self.ttpcm = matrixcross(pcm)
         self.tpcm = self.ttpcm.transpose()
-        self.MRB = np.block([[np.eye(3) * m, m * self.ttpcm], [m * self.tpcm, self.I]])  # TODO verificar se não é @
+        self.MRB = np.block([[np.eye(3) * m, m * self.ttpcm], [m * self.tpcm, self.I]])
         self.N = self.MRB[:, 0: 3]
 
     def getCRB(self, omega):

@@ -30,11 +30,11 @@ def getKEps2(strain):
     ky = strain[0, 2]
     kz = strain[0, 3]
     exb = (1 + ex)
-    lamb2 = (kx ^ 2 + ky ^ 2 + kz ^ 2)
+    lamb2 = (kx ** 2 + ky ** 2 + kz ** 2)
     KEps2 = np.array([[0, 0, exb * kz, -exb * ky],
-                      [0, -(lamb2 - kx ^ 2), ky * kx, kz * kx],
-                      [0, ky * kx, -(lamb2 - ky ^ 2), kz * ky],
-                      [0, kz * kx, kz * ky, -(lamb2 - kz ^ 2)]])
+                      [0, -(lamb2 - kx ** 2), ky * kx, kz * kx],
+                      [0, ky * kx, -(lamb2 - ky ** 2), kz * ky],
+                      [0, kz * kx, kz * ky, -(lamb2 - kz ** 2)]])
 
     return KEps2
 
@@ -45,8 +45,8 @@ def getKEps3(strain):
     ky = strain[0, 2]
     kz = strain[0, 3]
     exb = (1 + ex)
-    lamb2 = (kx ^ 2 + ky ^ 2 + kz ^ 2)
-    KEps3 = np.array([[0, -exb * (kz ^ 2 + ky ^ 2), exb * ky * kx, exb * kz * kx],
+    lamb2 = (kx ** 2 + ky ** 2 + kz ** 2)
+    KEps3 = np.array([[0, -exb * (kz ** 2 + ky ** 2), exb * ky * kx, exb * kz * kx],
                       [0, 0, -kz * lamb2, ky * lamb2],
                       [0, kz * lamb2, 0, -kx * lamb2],
                       [0, -ky * lamb2, kx * lamb2, 0]])
@@ -67,13 +67,13 @@ def getExpG(strain, length):  # eq A8
     lamb = math.sqrt(lamb2)
 
     if lamb2 > 1e-10:
-        a = (length / lamb2 - math.sin(lamb * length) / lamb ^ 3)
+        a = (length / lamb2 - math.sin(lamb * length) / lamb ** 3)
         b = (1 - math.cos(lamb * length)) / lamb2
         c = length
 
     else:
-        a = length ^ 3 / 6
-        b = length ^ 2 / 2
+        a = length ** 3 / 6
+        b = length ** 2 / 2
         c = length
 
     expGast = a * KEps3 + b * KEps2 + c * KEps + np.eye(4)
@@ -93,11 +93,11 @@ def getExpG(strain, length):  # eq A8
     expG = Th @ makeDiag(expGast) @ Th.transpose()
 
     if lamb2 > 1e-10:
-        dbdEps = (lamb * length * math.sin(lamb * length) - 2 * (1 - math.cos(lamb * length))) / lamb ^ 4 * np.block(
+        dbdEps = (lamb * length * math.sin(lamb * length) - 2 * (1 - math.cos(lamb * length))) / lamb ** 4 * np.block(
             [[0 * np.eye(4)], [kx * np.eye(4)], [ky * np.eye(4)], [kz * np.eye(4)]])
 
-        dadEps = (3 * math.sin(lamb * length) / lamb ^ 5 - (
-                2 * length + length * math.cos(lamb * length)) / lamb ^ 4) * np.block(
+        dadEps = (3 * math.sin(lamb * length) / lamb ** 5 - (
+                2 * length + length * math.cos(lamb * length)) / lamb ** 4) * np.block(
             [[0 * np.eye(4)], [kx * np.eye(4)], [ky * np.eye(4)], [kz * np.eye(4)]])
 
     else:

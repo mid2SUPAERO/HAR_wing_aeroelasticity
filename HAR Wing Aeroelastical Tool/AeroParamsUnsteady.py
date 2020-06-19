@@ -11,33 +11,32 @@ class AeroParamsUnsteady:
         self.m = 2  # ?
 
         self.alpha0 = alpha0
-        self.clAlpha = clAlpha
-        self.clDelta = clDelta
+        self.clalpha = clAlpha
+        self.cldelta = clDelta
         self.cm0 = cm0
-        self.cmDelta = cmDelta
+        self.cmdelta = cmDelta
         self.cd0 = cd0
-        self.nDelta = nDelta
+        self.ndelta = nDelta
 
-        self.A = None
+        self.A = np.zeros((self.N, self.N))
         self.B = None
         self.Bm = None
         self.B1 = None
         self.B2 = None
-        self.C = None
-        self.T = None
-        self.K = None
+        self.C = np.zeros((self.m, self.m))
+        self.T = np.zeros((self.m, self.n))
+        self.K = np.zeros((self.m, self.m))
 
         AeroParamsUnsteady.calcMatrix(self)
 
-        self.E1 = -np.linalg.inv(self.A)  # TODO verificar Vwind/b
+        self.E1 = -np.linalg.inv(self.A)
         self.E2 = np.linalg.inv(self.A) @ self.B1[:, 0]
         self.E3 = np.linalg.inv(self.A) @ self.B1[:, 1]
-        self.E4 = np.linalg.inv(self.A) @ self.B2[:, 1]  # TODO verificar Vwind/b
+        self.E4 = np.linalg.inv(self.A) @ self.B2[:, 1]
 
     # ------------- # ------------- METHODS ------------- # ------------- #
-    # TODO criar setmembermatrix em members, esta em Peter.m
+    # TODO criar setmembermatrix em members, esta em Peter.m necessario?
     def calcMatrix(self):  # eq 2.63
-        self.T = np.zeros((self.m, self.n))
 
         self.T[0, 0] = self.b
 
@@ -47,13 +46,9 @@ class AeroParamsUnsteady:
 
         # TODO necessario? if self.n>=3:
 
-        self.K = np.zeros((self.m, self.m))
-
         for i1 in range(0, self.m):
             self.K[0, i1] = i1
-            self.K[i1, i1] = -(i1) / 2
-
-        self.C = np.zeros((self.m, self.m))
+            self.K[i1, i1] = -i1 / 2
 
         if self.m >= 1:
             self.C[0, 0] = 1.
@@ -91,7 +86,7 @@ class AeroParamsUnsteady:
         for i1 in range(0, self.N):
             for i2 in range(0, self.N):
                 if i1 == i2 + 1:
-                    D[i1, i2] == 1 / (2 * (i1+1))
+                    D[i1, i2] = 1 / (2 * (i1+1))
                 elif i1 == i2 - 1:
                     D[i1, i2] = -1 / (2 * (i1+1))
 
@@ -105,7 +100,7 @@ class AeroParamsUnsteady:
             c[i1] = 2 / (i1 + 1)
 
             if i1 == 0:  # TODO faz sentido? necessario?
-                d[i1] == 1. / 2
+                d[i1] = 1. / 2
 
         self.B = b
         self.Bm = 1 / 2 * self.C @ np.block([[1], [np.zeros((self.m - 1, 1))]]) @ b.transpose()  # TODO esta certo?

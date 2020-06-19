@@ -20,12 +20,12 @@ class Engine:
     def getFPROP(self, ap, manete, rho, U):
         FPROP = np.zeros((ap.NUMele * 9, 1))
 
-        for i in range(0, ap.prop.shape[1]):  # TODO checar esse loop
+        for i in range(0, ap.prop.shape[0]):  # TODO checar esse loop
             Cwb = np.array([[1, 0, 0], [0, cos(self.alphaf), -sin(self.alphaf)],
                             [0, sin(self.alphaf), cos(self.alphaf)]]) @ np.array(
                 [[cos(self.betaf), -sin(self.betaf), 0], [sin(self.betaf), cos(self.betaf), 0], [0, 0, 1]])
             CBb = np.eye(3) @ Cwb
 
-            FPROP[(3 * ap.prop[i].NODEpos): (3 + 3 * ap.prop[i].NODEpos)] = CBb @ np.array([[0], [
+            FPROP[int(3 * ap.prop[i].NODEpos): int(3 + 3 * ap.prop[i].NODEpos)] = CBb @ np.array([[0], [
                 manete[ap.prop[i].numPI - 1] * self.Fmax * (U / self.V0) ** self.nv * (rho / self.rho0) ** self.nrho],
                                                                                             [0]])

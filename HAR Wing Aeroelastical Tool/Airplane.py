@@ -2,6 +2,7 @@ import numpy as np
 import math
 from scipy.linalg import block_diag
 from scipy.optimize import fsolve
+from scipy.interpolate import interp1d
 from assimulo.problem import Implicit_Problem
 from assimulo.solvers import IDA
 
@@ -20,7 +21,7 @@ def veclin(i, numstates):
 def equilibracorpo(vec, strain, strainp, strainpp, lambd, beta, betap, kinetic, ap, V):
     theta = vec[0]
     deltaflap = vec[1]
-    tracao = vec[2]
+    tracao = np.array([vec[2]])
     beta[2] = -V * math.sin(theta)
     beta[1] = V * math.cos(theta)
     Vento = 0
@@ -44,7 +45,6 @@ def equilibraestrutura(strain, strainp, strainpp, lambd, beta, betap, kinetic, a
 
 
 def equilibratudo(vec, strain, strainp, strainpp, lambd, beta, betap, kinetic, ap, V, tracao, deltaflap):
-    # global softPARAMS # TODO necessario?
     strain = vec[0:strainp.shape[1]]
     theta = vec[strainp.shape[1] + 1]
     deltaflap = vec[strainp.shape[1] + 2]
@@ -54,21 +54,23 @@ def equilibratudo(vec, strain, strainp, strainpp, lambd, beta, betap, kinetic, a
     Vento = 0
     kinetic[1] = theta
 
-    # softPARAMS.isEQ = 1 # TODO masoq???
     FLAG = 0
     Xp, bp, lambdap = dinamicaflex(0, strain, strainp, strainpp,
                                    lambd, beta, betap, kinetic, ap, V, tracao, deltaflap, FLAG)
-    # softPARAMS.isEQ = 0
     zero = np.array([[Xp], [bp[2]], [bp[3]], [bp[4]]])
 
     return zero
 
 
-def dinamicaflexODEimplicit(t, x, xp, parameters):  # TODO resolver
+def dinamicaflexODEimplicit(t, x, xp, parameters):
     ap = parameters[0]
     V = parameters[1]
     manete = parameters[2]
     deltaflap = parameters[3]
+    T = parameters[4]
+    elev = parameters[5]
+
+    deltaflap = deltaflap + interp1d(T, elev)(t)
 
     strain = x[0:ap.NUMele * 4]
     strainp = x[(ap.NUMele * 4):(ap.NUMele * 4 * 2)]
@@ -102,7 +104,7 @@ def dinamicaflexODEimplicit(t, x, xp, parameters):  # TODO resolver
 
 class Airplane:
     def __init__(self, structures, engines, fus=Fuselage(0, np.array([0, 0, 0]), np.zeros((3, 3)))):
-        self.NUMmembers = structures.shape[1]
+        self.NUMmembers = structures.shape[0]
         self.members = structures
         self.NUMele = 0
         self.prop = engines
@@ -119,16 +121,16 @@ class Airplane:
         self.Jthetab = None
 
         for ii in range(0, self.NUMmembers):
-            self.membSIZES[ii] = self.members[ii].numOfElems
-            self.membNAED[ii] = self.members[ii].elementsVector[1].node1.aeroParams.N
+            self.membSIZES[0, ii] = self.members[ii].numOfElems
+            self.membNAED[0, ii] = self.members[ii].elementsVector[1].node1.aeroParams.N
 
-            self.membNAEDtotal[ii] = 3 * self.membNAED[ii] * self.membSIZES[ii]
-            self.NUMele = self.NUMele + self.membSIZES[ii]
+            self.membNAEDtotal[0, ii] = 3 * self.membNAED[0, ii] * self.membSIZES[0, ii]
+            self.NUMele = self.NUMele + int(self.membSIZES[0, ii])
 
         self.NUMaedstates = np.sum(self.membNAEDtotal)
 
-        for ii in range(0, self.prop.shape[1]):
-            self.prop[ii].NODEpos = 1 + 3 * np.sum(self.membSIZES[0:(self.prop[ii].numMEMB - 1)]) + (
+        for ii in range(0, self.prop.shape[0]):
+            self.prop[ii].NODEpos = 1 + 3 * np.sum(self.membSIZES[0, 0:(self.prop[ii].numMEMB - 1)]) + (
                     self.prop[ii].numELEM - 1) * 3 + (self.prop[ii].numNODE - 1)
 
         Me = np.array([])
@@ -141,8 +143,12 @@ class Airplane:
             Me = block_diag(Me, self.members[ii].getMe())
             K = block_diag(K, self.members[ii].getK())
             C = block_diag(C, self.members[ii].getC())
-            N = np.block([[N], [self.members[ii].getN()]])
             B = block_diag(B, self.members[ii].getB())
+
+            if ii == 0:
+                N = self.members[ii].getN()
+            else:
+                N = np.block([[N], [self.members[ii].getN()]])
 
         self.Me = Me
         self.K = K
@@ -161,26 +167,38 @@ class Airplane:
         Jthetab = []
 
         for i in range(0, self.NUMmembers):
-            self.members[i].elementsVector[1].memberJhep = self.members[i].getJhep()
-            Jhep = block_diag(Jhep, self.members[i].elementsVector[1].memberJhep)
+            self.members[i].elementsVector[0].memberJhep = self.members[i].getJhep()
+            Jhep = block_diag(Jhep, self.members[i].elementsVector[0].memberJhep)
 
-            self.members[i].elementsVector[1].memberJpep = self.members[i].getJpep(
-                self.members[i].elementsVector[1].memberJhep)
-            Jpep = block_diag(Jpep, self.members[i].elementsVector[1].memberJpep)
+            self.members[i].elementsVector[0].memberJpep = self.members[i].getJpep(
+                self.members[i].elementsVector[0].memberJhep)
+            Jpep = block_diag(Jpep, self.members[i].elementsVector[0].memberJpep)
 
-            self.members[i].elementsVector[1].memberJthetaep = self.members[i].getJthetaep(
-                self.members[i].elementsVector, self.members[i].elementsVector[1].memberJhep)  # TODO checar
-            Jthetaep = block_diag(Jthetaep, self.members[i].elementsVector[1].memberJthetaep)
+            self.members[i].elementsVector[0].memberJthetaep = self.members[i].getJthetaep(
+                self.members[i].elementsVector[0].memberJhep)  # TODO checar
+            Jthetaep = block_diag(Jthetaep, self.members[i].elementsVector[0].memberJthetaep)
 
-            self.members[i].elementsVector[1].memberJhb = self.members[i].getJhb()
-            Jhb = np.block([[Jhb], [self.members[i].elementsVector[1].memberJhb]])
+            self.members[i].elementsVector[0].memberJhb = self.members[i].getJhb()
 
-            self.members[i].elementsVector[1].memberJpb = self.members[i].getJpb(
-                self.members[i].elementsVector[1].memberJhb)
-            Jpb = [[Jpb], [self.members[i].elementsVector[1].memberJpb]]
+            if i == 0:
+                Jhb = self.members[i].elementsVector[0].memberJhb
+            else:
+                Jhb = np.block([[Jhb], [self.members[i].elementsVector[0].memberJhb]])
 
-            self.members[i].elementsVector[1].memberJthetab = self.members[i].getJthetab()
-            Jthetab = [[Jthetab], [self.members[i].elementsVector[1].memberJthetab]]
+            self.members[i].elementsVector[0].memberJpb = self.members[i].getJpb(
+                self.members[i].elementsVector[0].memberJhb)
+
+            if i == 0:
+                Jpb = self.members[i].elementsVector[0].memberJpb
+            else:
+                Jpb = np.block([[Jpb], [self.members[i].elementsVector[0].memberJpb]])
+
+            self.members[i].elementsVector[0].memberJthetab = self.members[i].getJthetab()
+
+            if i == 0:
+                Jthetab = self.members[i].elementsVector[0].memberJthetab
+            else:
+                Jthetab = np.block([[Jthetab], [self.members[i].elementsVector[0].memberJthetab]])
 
         self.Jhep = Jhep
         self.Jpep = Jpep
@@ -201,20 +219,22 @@ class Airplane:
 
     def update(self, strain, strainp, strainpp, lambd):
         for i in range(0, self.NUMmembers):
-            self.members[i].elementsVector[1].strainm = strain[(np.sum(self.membSIZES[0:(i - 1)]) * 4):(
-                    np.sum(self.membSIZES[0:i]) * 4)].tanspose()
-            self.members[i].elementsVector[1].strainpm = strainp[(np.sum(self.membSIZES[0:(i - 1)]) * 4):(
-                    np.sum(self.membSIZES[0:i]) * 4)].tanspose()
-            self.members[i].elementsVector[1].strainppm = strainpp[(np.sum(self.membSIZES[0:(i - 1)]) * 4):(
-                    np.sum(self.membSIZES[0:i]) * 4)].tanspose()
-            self.members[i].elementsVector[1].lambdm = lambd[(np.sum(self.membNAEDtotal[0:(i - 1)])):(
-                np.sum(self.membNAEDtotal[0:i]))].tanspose()
+            asas1 = int(np.sum(self.membSIZES[0, 0:i]) * 4)
+            asas2 = int(np.sum(self.membSIZES[0, 0:i+1]) * 4)
+            self.members[i].elementsVector[0].strainm = strain[:, int(np.sum(self.membSIZES[0, 0:i]) * 4):int(
+                    np.sum(self.membSIZES[0, 0:i+1]) * 4)].transpose()
+            self.members[i].elementsVector[0].strainpm = strainp[:, int(np.sum(self.membSIZES[0, 0:i]) * 4):int(
+                    np.sum(self.membSIZES[0, 0:i+1]) * 4)].transpose()
+            self.members[i].elementsVector[0].strainppm = strainpp[:, int(np.sum(self.membSIZES[0, 0:i]) * 4):int(
+                    np.sum(self.membSIZES[0, 0:i+1]) * 4)].transpose()
+            self.members[i].elementsVector[0].lambdm = lambd[int(np.sum(self.membNAEDtotal[0, 0:i])):int(
+                np.sum(self.membNAEDtotal[0, 0:i+1]))].transpose()
 
         for i in range(0, self.NUMmembers):
-            for j in range(0, self.membSIZES[i]):
+            for j in range(0, int(self.membSIZES[0, i])):
                 self.members[i].elementsVector[j].setStrain(
-                    self.members[i].elementsVector[1].strainm[(j * 4): (4 + j * 4)],
-                    self.members[i].elementsVector[1].strainpm[(j * 4): (4 + j * 4)])
+                    self.members[i].elementsVector[0].strainm[(j * 4): (4 + j * 4)].T,
+                    self.members[i].elementsVector[0].strainpm[(j * 4): (4 + j * 4)].T)
 
         for i in range(0, self.NUMmembers):
             self.members[i].update()
@@ -222,7 +242,7 @@ class Airplane:
     def airplanemovie(self):  # ah mas vai pass ar ainda por muito tempo
         pass
 
-    def linearize(self, straineq, betaeq, keq, manete, deltaflap, Vwind): #TODO ajeitar
+    def linearize(self, straineq, betaeq, keq, manete, deltaflap, Vwind, T, elev):
 
         if self.NUMaedstates == 0:
             lambda0 = []
@@ -238,22 +258,19 @@ class Airplane:
         delta = 1e-9
 
         Alin = np.zeros(
-            ((self.NUMaedstates + straineq.shape[1] * 2 + 10), (self.NUMaedstates + np.shape(straineq, 2) * 2 + 10)))
+            ((self.NUMaedstates + straineq.shape[1] * 2 + 10), (self.NUMaedstates + straineq.shape[1] * 2 + 10)))
         Mlin = np.eye((self.NUMaedstates + straineq.shape[1] * 2 + 10))
 
         for i in range(0, xp.shape[0]):
-            soma = dinamicaflexODEimplicit(0, x + veclin(i, x.shape[0]).tanspose() * delta, xp, Vwind,
-                                           manete, deltaflap)
-            subtr = dinamicaflexODEimplicit(0, x - veclin(i, x.shape[0]).tanspose() * delta, xp, Vwind,
-                                            manete, deltaflap)
+            param = [self, Vwind, manete, deltaflap, T, elev]
+            soma = dinamicaflexODEimplicit(0, x + veclin(i, x.shape[0]).transpose() * delta, xp, param)
+            subtr = dinamicaflexODEimplicit(0, x - veclin(i, x.shape[0]).transpose() * delta, xp, param)
 
             if (i >= (straineq.shape[1] + 1)) and (i <= (straineq.shape[1] * 2)) or (
                     (i >= self.NUMaedstates + straineq.shape[1] * 2 + 1) and (
                     i <= self.NUMaedstates + straineq.shape[1] * 2 + 6)):  # TODO talvez precise alterar esse i
-                somap = dinamicaflexODEimplicit(0, x, xp + veclin(i, x.shape[0]).tanspose() * delta,
-                                                Vwind, manete, deltaflap)
-                subtrp = dinamicaflexODEimplicit(0, x, xp - veclin(i, x.shape[0]).tanspose() * delta,
-                                                 Vwind, manete, deltaflap)
+                somap = dinamicaflexODEimplicit(0, x, xp + veclin(i, x.shape[0]).transpose() * delta, param)
+                subtrp = dinamicaflexODEimplicit(0, x, xp - veclin(i, x.shape[0]).transpose() * delta, param)
                 Mlin[:, i] = -(somap - subtrp) / (2 * delta)
 
             Alin[:, i] = (soma - subtr) / (2 * delta)
@@ -275,8 +292,7 @@ class Airplane:
         strain = np.zeros((self.NUMele * 4, 1)).transpose()
         strainp = np.zeros((self.NUMele * 4, 1)).transpose()
         strainpp = np.zeros((self.NUMele * 4, 1)).transpose()
-
-        lambd = np.zeros((np.sum(self.membNAEDtotal), 1))
+        lambd = np.zeros((int(np.sum(self.membNAEDtotal)), 1))
         Airplane.updateStrJac(self)
 
         beta = np.zeros((6, 1))
@@ -304,7 +320,7 @@ class Airplane:
                           xtol=1e-15, maxfev=20000)
 
         # figure(100); # TODO adaptar
-        # plotairplane3d(ap);
+        Airplane.plotAirplane3D(self)
 
         theta = 0
         vec = np.array([0, 0, 0])
@@ -316,19 +332,14 @@ class Airplane:
                           xtol=1e-17, maxfev=20000)
 
         # figure(100); # TODO adaptar
-        # plotairplane3d(ap);
-
-        # TODO aqui ele printava esses valores, vale a pena? precisa? se não, tirar
-        # theta
-        # deltaflap
-        # tracao
+        Airplane.plotAirplane3D(self)
 
         return vec, strainEQ
 
     def trimairplanefull(self):  # TODO necessario? prefiro usar so esse ou o full
         pass
 
-    def simulate(self, tspan, strain0, beta0, kinetic0, Vwind, manete, deltaflap):
+    def simulate(self, tspan, strain0, beta0, kinetic0, Vwind, manete, deltaflap, T, elev):
         x0 = np.block(
             [[strain0.transpose()], [np.zeros((self.NUMele * 4, 1))], [np.zeros((self.NUMaedstates, 1))], [beta0],
              [kinetic0]])
@@ -339,7 +350,7 @@ class Airplane:
         # t,X = ode15i( @ (t, x, xp) dinamicaflexODEimplicit(t, x, xp, ap, Vwind, manete(t), deltaflap(t)), tspan, x0, xp0, options);
 
         t0 = tspan[0]  # Initial time
-        params = np.array([self, Vwind, manete, deltaflap])
+        params = np.array([self, Vwind, manete, deltaflap, T, elev])
 
         model = Implicit_Problem(dinamicaflexODEimplicit, x0, xp0, t0, p0=params)  # Create an Assimulo problem
         model.name = 'Flight simulation'  # Specifies the name of problem (optional)
