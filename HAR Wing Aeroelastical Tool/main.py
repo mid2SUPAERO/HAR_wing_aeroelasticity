@@ -1,5 +1,5 @@
 import numpy as np
-from math import sin, cos
+from math import sin, cos, pi
 from scipy.linalg import block_diag
 from scipy.optimize import fsolve
 from mpl_toolkits import mplot3d
@@ -15,6 +15,7 @@ from Fuselage import Fuselage
 from Engine import Engine
 from Element import Element
 from Node import Node
+from flutter_speed import flutter_speed
 from changedatarate import changedatarate
 
 
@@ -72,7 +73,7 @@ def create_flexible_member(num_elements, damp_ratio):
 
     CG = damp_ratio * np.diag([K11, K22, K33, K44])
 
-    pos_cg = np.array([0, 0.3, 0])
+    pos_cg = np.array([0, 0.0, 0])
 
     geometry = np.array([0.0, 0.5])
 
@@ -85,71 +86,80 @@ def create_flexible_member(num_elements, damp_ratio):
     # aerodynamic data
     c = 1
     b = c / 2
-    N = 0
+    N = 4
     a = 0.0
-    alpha0 = -5 * np.pi / 180
+    alpha0 = -0 * np.pi / 180
     clalpha = 2 * np.pi
     cm0 = 0
     cd0 = 0.02
-    ndelta = 1
-    cldelta = 0.01
-    cmdelta = -0.1
+    ndelta = 0
+    cldelta = 0.0
+    cmdelta = -0.0
 
     aero_right = AeroParams(b, N, a, alpha0, clalpha, cm0, cd0, ndelta, cldelta, cmdelta)
 
     rot0_right = Rot(dihedral=0, sweep=0, twist=0)
 
-    right_wing = create_uniform_structure(pos_cg, rot0_right, Length, Inertia, mcs, KG, CG, aero_right, geometry,
+    flexible_member = create_uniform_structure(pos_cg, rot0_right, Length, Inertia, mcs, KG, CG, aero_right, geometry,
                                           num_elements)
 
-    # aerodynamic data
-    c = 1
-    b = c / 2
-    N = 0
-    a = 0.0
-    alpha0 = 5 * np.pi / 180
-    clalpha = 2 * np.pi
-    cm0 = 0
-    cd0 = 0.02
-    ndelta = 1
-    cldelta = -0.01
-    cmdelta = 0.1
+    # # aerodynamic data
+    # c = 1
+    # b = c / 2
+    # N = 0
+    # a = 0.0
+    # alpha0 = 5 * np.pi / 180
+    # clalpha = 2 * np.pi
+    # cm0 = 0
+    # cd0 = 0.02
+    # ndelta = 1
+    # cldelta = -0.01
+    # cmdelta = 0.1
+    #
+    # aero_left = AeroParams(b, N, a, alpha0, clalpha, cm0, cd0, ndelta, cldelta, cmdelta)
+    #
+    # rot0_left = Rot(dihedral=pi, sweep=0, twist=0)
+    #
+    # left_wing = create_uniform_structure(pos_cg, rot0_left, Length, Inertia, mcs, KG, CG, aero_left, geometry,
+    #                                      num_elements)
 
-    aero_left = AeroParams(b, N, a, alpha0, clalpha, cm0, cd0, ndelta, cldelta, cmdelta)
-
-    rot0_left = Rot(dihedral=0, sweep=0, twist=0)
-
-    left_wing = create_uniform_structure(pos_cg, rot0_left, Length, Inertia, mcs, KG, CG, aero_left, geometry,
-                                         num_elements)
-
-    return right_wing, left_wing
+    return flexible_member
 
 
 def load_structure(num_elem, damp_ratio):
-    right_wing, left_wing = create_flexible_member(num_elem, damp_ratio)
+    # right_wing, left_wing = create_flexible_member(num_elem, damp_ratio)
+    #
+    # right_wing.elementsVector[0].setH0(np.array([[0], [-0.3], [0], [1], [0], [0], [0], [1], [0], [0], [0], [1]]))
+    # left_wing.elementsVector[0].setH0(np.array([[0], [-0.3], [0], [1], [0], [0], [0], [1], [0], [0], [0], [1]]))
+    # right_wing.update()
+    # left_wing.update()
+    #
+    # fus = Fuselage(m=10, pcm=np.array([0, 0, 0]), I=np.zeros((3, 3)) + 0 * np.array([[0, 0, 0], [0, 0, 0], [0, 0, 0]]))
+    #
+    # Fmax = 1
+    # V0 = 1
+    # rho0 = 1
+    # nv = -1
+    # nrho = 0
+    # alphaf = 0
+    # betaf = 0
+    # numPI = 1
+    # numMEMB = 1
+    # numELEM = 1
+    # numNODE = 1
+    #
+    # motor1 = Engine(numPI, numMEMB, numELEM, numNODE, Fmax, rho0, V0, nrho, nv, alphaf, betaf)
+    #
+    # airp = Airplane(np.array([right_wing, left_wing]), np.array([motor1]), fus)
 
-    right_wing.elementsVector[0].setH0(np.array([[0], [-0.3], [0], [1], [0], [0], [0], [1], [0], [0], [0], [1]]))
-    left_wing.elementsVector[0].setH0(np.array([[0], [-0.3], [0], [1], [0], [0], [0], [1], [0], [0], [0], [1]]))
-    right_wing.update()
-    left_wing.update()
+    flexible_member = create_flexible_member(numele, damp_ratio)
 
-    fus = Fuselage(m=10, pcm=np.array([0, 0, 0]), I=np.zeros((3, 3)) + 0 * np.array([[0, 0, 0], [0, 0, 0], [0, 0, 0]]))
+    flexible_member.elementsVector[0].setH0(np.array([[0], [-0.0], [0], [1], [0], [0], [0], [1], [0], [0], [0], [1]]))
+    flexible_member.update()
 
-    Fmax = 1
-    V0 = 1
-    rho0 = 1
-    nv = -1
-    nrho = 0
-    alphaf = 0
-    betaf = 0
-    numPI = 1
-    numMEMB = 1
-    numELEM = 1
-    numNODE = 1
-
-    motor1 = Engine(numPI, numMEMB, numELEM, numNODE, Fmax, rho0, V0, nrho, nv, alphaf, betaf)
-
-    airp = Airplane(np.array([right_wing, left_wing]), np.array([motor1]), fus)
+    fus = Fuselage(m=0, pcm=np.array([0, 0, 0]), I=np.zeros((3, 3)) + 0 * np.array([[0, 0, 0], [0, 0, 0], [0, 0, 0]])) # no fuselage
+    motor1 = Engine(0, 0, 0, 0) # no engines
+    airp = Airplane(np.array([flexible_member]), np.array([motor1]), fus)
 
     return airp
 
@@ -163,66 +173,83 @@ if __name__ == '__main__':
 
     # Finds Equilibrium Condition
     altitude = 19931.7
-    V = 15
+    V = 0
     throttle = 0
     deltaflap = 0
-    Vwind = 0
-    rb_eq, strain_eq = ap.trimairplane(V, altitude, Vwind, throttle, deltaflap)
+    Vwind = 10
+
+    isPinned = 'True'
+
+    rb_eq, strain_eq = ap.trimairplane(V, altitude, Vwind, throttle, deltaflap,isPinned)
 
     theta = rb_eq[0]
     deltaflap = rb_eq[1]
     engine_position = rb_eq[2]
 
-    # Nonlinear simulation
-    # Initial conditions
+    # flutter speed - undeformed(Linear)
+    flut_speed, flut_eig_val, flut_eig_vec = flutter_speed(20, 35, 0.01, ap, strain_eq * 0, altitude)
 
-    tSim = 20  # s
-    T = np.array([0.00, 0.49, 0.50, 1.99, 2.00, 3.49, 3.5, 100])
-    elev = np.array([0, 0, 1, 1, -1, -1, 0, 0]) / 5
+    print('flutter speed:')
+    print(flut_speed)
+    print('flutter eig val:')
+    print(flut_eig_val)
 
-    # TODO aerodynamic_surface_pos =@(t)(deltaflap + interp1(T, elev, t));
+    # flutter speed - deformed(Nonlinear)
+    flut_speed, flut_eig_val, flut_eig_vec = flutter_speed(20, 35, 0.01, ap, strain_eq, altitude)
 
-    beta0 = np.array([[0], [V * cos(theta)], [-V * sin(theta)], [0], [0], [0]])
-    k0 = np.array([[theta], [0], [0], [altitude]])
-    strain0 = strain_eq
-    Vwind = 0
+    print('flutter speed:')
+    print(flut_speed)
+    print('flutter eig val:')
+    print(flut_eig_val)
 
-    tNL, strainNL, straindNL, lambdaNL, betaNL, kineticNL = ap.simulate(np.array([0, tSim]), strain0, beta0, k0, Vwind,
-                                                                        engine_position, deltaflap, T, elev)
-
-    dt = 0.1
-    ts, Xs = changedatarate(tNL, strainNL, dt)
-    ts, kinetics = changedatarate(tNL, kineticNL, dt)
-    tip_displacement = np.zeros((ts.shape[0], 1))
-
-    for i in range(0, ts.shape[0]):
-        ap.update(Xs[i, :], np.zeros(Xs[i, :].shape), np.zeros(Xs[i, :].shape), np.zeros((np.sum(ap.membNAEDtotal), 1)))
-        tip_displacement[i] = ap.members[i].elementsVector[numele].node3.h[2]
-
-    fig, ax = plt.subplots()
-    ax.plot(ts, tip_displacement, 'r')
-
-    ax.set(xlabel='Time (s)', ylabel='Tip displacement (m)',
-           title='Wing tip displacement')
-    ax.grid()
-
-    longFig, longAx = plt.subplots(nrows=2, ncols=2)
-
-    longAx[0, 0].plot(tNL, betaNL[:, 1], 'r')
-    longAx[0, 0].set_xlabel('t')
-    longAx[0, 0].set_ylabel('v (m/s)')
-
-    longAx[0, 1].plot(tNL, betaNL[:, 2], 'r')
-    longAx[0, 1].set_xlabel('t')
-    longAx[0, 1].set_ylabel('w (m/s)')
-
-    longAx[1, 0].plot(tNL, betaNL[:, 3], 'r')
-    longAx[1, 0].set_xlabel('t')
-    longAx[1, 0].set_ylabel('q (m/s)')
-
-    longAx[1, 1].plot(tNL, kineticNL[:, 3], 'r')
-    longAx[1, 1].set_xlabel('t')
-    longAx[1, 1].set_ylabel('Altitude (m)')
+    # # Nonlinear simulation
+    # # Initial conditions
+    #
+    # tSim = 5  # s
+    # T = np.array([0.00, 0.49, 0.50, 1.99, 2.00, 3.49, 3.5, 100])
+    # elev = np.array([0, 0, 1, 1, -1, -1, 0, 0]) / 5
+    #
+    # beta0 = np.array([[0], [V * cos(theta)], [-V * sin(theta)], [0], [0], [0]])
+    # k0 = np.array([[theta], [0], [0], [altitude]])
+    # strain0 = strain_eq
+    # Vwind = 0
+    #
+    # tNL, strainNL, straindNL, lambdaNL, betaNL, kineticNL = ap.simulate(np.array([0, tSim]), strain0, beta0, k0, Vwind,
+    #                                                                     engine_position, deltaflap, T, elev)
+    #
+    # dt = 0.1
+    # ts, Xs = changedatarate(tNL, strainNL, dt)
+    # ts, kinetics = changedatarate(tNL, kineticNL, dt)
+    # tip_displacement = np.zeros((ts.shape[0], 1))
+    #
+    # for i in range(0, ts.shape[0]):
+    #     ap.update(Xs[i, :], np.zeros(Xs[i, :].shape), np.zeros(Xs[i, :].shape), np.zeros((np.sum(ap.membNAEDtotal), 1)))
+    #     tip_displacement[i] = ap.members[i].elementsVector[numele].node3.h[2]
+    #
+    # fig, ax = plt.subplots()
+    # ax.plot(ts, tip_displacement, 'r')
+    #
+    # ax.set(xlabel='Time (s)', ylabel='Tip displacement (m)',
+    #        title='Wing tip displacement')
+    # ax.grid()
+    #
+    # longFig, longAx = plt.subplots(nrows=2, ncols=2)
+    #
+    # longAx[0, 0].plot(tNL, betaNL[:, 1], 'r')
+    # longAx[0, 0].set_xlabel('t')
+    # longAx[0, 0].set_ylabel('v (m/s)')
+    #
+    # longAx[0, 1].plot(tNL, betaNL[:, 2], 'r')
+    # longAx[0, 1].set_xlabel('t')
+    # longAx[0, 1].set_ylabel('w (m/s)')
+    #
+    # longAx[1, 0].plot(tNL, betaNL[:, 3], 'r')
+    # longAx[1, 0].set_xlabel('t')
+    # longAx[1, 0].set_ylabel('q (m/s)')
+    #
+    # longAx[1, 1].plot(tNL, kineticNL[:, 3], 'r')
+    # longAx[1, 1].set_xlabel('t')
+    # longAx[1, 1].set_ylabel('Altitude (m)')
 
     plt.show()
 

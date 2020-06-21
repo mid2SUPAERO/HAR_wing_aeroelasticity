@@ -128,7 +128,7 @@ class Structure:
     def setHNodes(self):
         for ii in range(0, self.numOfElems):
             if ii != 0:
-                self.elementsVector[ii].h0 = self.elementsVector[ii].elemRot @ self.elementsVector[ii - 1].node3.h
+                self.elementsVector[ii].h0 = self.elementsVector[ii].elemRot @ self.elementsVector[ii-1].node3.h
 
             self.elementsVector[ii].node1.h = self.elementsVector[ii].h0
             self.elementsVector[ii].node2.h = self.elementsVector[ii].expG @ self.elementsVector[ii].h0
@@ -153,7 +153,7 @@ class Structure:
                                 2 * self.elementsVector[ii].length)
             self.elementsVector[ii].Jhepp = product3dXvec(self.elementsVector[ii].strainPVec)
 
-    def getJhep(self):
+    def getmemberJhep(self):
         Jhep = np.zeros((self.numOfElems * 12 * 3, self.numOfElems * 4))
         for ii in range(0, self.numOfElems):
             for jj in range(0, self.numOfElems):
@@ -220,7 +220,7 @@ class Structure:
                                                                           [matrixcross(wy)],
                                                                           [matrixcross(wz)]])
 
-            return Jhb
+        return Jhb
 
     def getJpb(self, Jhb):
         Jpbeta = np.zeros((self.numOfElems * 9, 6))
@@ -286,6 +286,8 @@ class Structure:
         for i in range(0, self.numOfElems):
             Bf[(i * 9): (i * 9 + 9), (i * 9): (i * 9 + 9)] = 0.5 * self.elementsVector[i].length * Bfe
 
+        return Bf
+
     def getJthetaep(self, Jhep):
         Jthetaep = np.zeros((self.numOfElems * 9, self.numOfElems * 4))
 
@@ -330,9 +332,6 @@ class Structure:
                         dtdex3 = np.block([self.elementsVector[i].node3.h[3:6], self.elementsVector[i].node3.h[6: 9],
                                            self.elementsVector[i].node3.h[9: 12]]) @ np.block(
                             [[dtdepx], [dtdepy], [dtdepz]])
-
-                        print(Jthetaep[(i * 9): (i * 9 + 9), (ii * 4 + j)])
-                        print(np.block([[dtdex1], [dtdex2], [dtdex3]]))
 
                         Jthetaep[(i * 9): (i * 9 + 9), (ii * 4 + j)] = np.block([dtdex1.T, dtdex2.T, dtdex3.T])
 

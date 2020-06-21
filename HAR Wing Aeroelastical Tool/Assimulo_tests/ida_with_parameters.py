@@ -21,7 +21,6 @@ import nose
 from assimulo.solvers import IDA
 from assimulo.problem import Implicit_Problem
 
-
 def run_example(with_plots=True):
     r"""
     This is the same example from the Sundials package (cvsRoberts_FSA_dns.c)
@@ -54,8 +53,8 @@ def run_example(with_plots=True):
         return N.array([res1, res2, res3])
 
     # The initial conditons
-    y0 = [1.0, 0.0, 0.0]  # Initial conditions for y
-    yd0 = [0.1, 0.0, 0.0]  # Initial conditions for dy/dt
+    y0 = N.array([1.0, 0.0, 0.0])  # Initial conditions for y
+    yd0 = N.array([0.1, 0.0, 0.0])  # Initial conditions for dy/dt
     p0 = [0.040, 1.0e4, 3.0e7]  # Initial conditions for parameters
 
     # Create an Assimulo implicit problem

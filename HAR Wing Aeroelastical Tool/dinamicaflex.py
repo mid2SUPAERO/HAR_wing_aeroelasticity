@@ -9,9 +9,13 @@ from aeroforceandmoment import aeroforceandmoment
 
 
 def dinamicaflex(t, strain, strainp, strainpp, lambd, beta, betap, kinetic, ap, V, manete, deltaflap, FLAG):
+    kinetic = kinetic.reshape(4)
+
     H = kinetic[3]
     isEQ = None
     isIMPLICIT = None
+
+    strain = strain.reshape(1, int(np.sum(ap.membSIZES[0, 0:ap.NUMmembers]) * 4))
 
     g = 9.80665  # m/s**2 standard earth gravity
     rho = atmosfera(H)
@@ -74,7 +78,7 @@ def dinamicaflex(t, strain, strainp, strainpp, lambd, beta, betap, kinetic, ap, 
             FLAMBDA = np.block([[FLAMBDA], [FLAMBDAm]])
 
 
-    U = beta[2]
+    U = beta[1]
 
     FPROP = ap.prop[0].getFPROP(ap, manete, rho, U) # TODO [0] considera apenas um motor, modificar dps
 
@@ -88,7 +92,7 @@ def dinamicaflex(t, strain, strainp, strainpp, lambd, beta, betap, kinetic, ap, 
     GZ = -g * math.cos(phi) * math.cos(theta)
     GRAVITY = np.block([[GX], [GY], [GZ]])
 
-    RAEROF = ap.Jpep.transpose() @ ap.B @ FAERO + ap.Jpep.transpose() @ FPROP + ap.Jthetae.transpose() @ ap.B @ MAERO + ap.Jhep.transpose() @ ap.N @ GRAVITY
+    RAEROF = ap.Jpep.transpose() @ ap.B @ FAERO + ap.Jpep.transpose() @ FPROP + ap.Jthetaep.transpose() @ ap.B @ MAERO + ap.Jhep.transpose() @ ap.N @ GRAVITY
     RAEROB = ap.Jpb.transpose() @ ap.B @ FAERO + ap.Jpb.transpose() @ FPROP + ap.Jthetab.transpose() @ ap.B @ MAERO + ap.Jhb.transpose() @ ap.N @ GRAVITY + ap.fus.N @ GRAVITY
 
     if isEQ == 0:
@@ -97,16 +101,16 @@ def dinamicaflex(t, strain, strainp, strainpp, lambd, beta, betap, kinetic, ap, 
                     -MFB @ betap - CFB @ beta - CFF @ strainp.transpose() - KFF @ strain.transpose() + RAEROF))
             bp = np.linalg.solve(MBB, (
                     -MBF @ strainpp.transpose() - CBF @ strainp.transpose() - CBB @ beta + RAEROB) * np.array(
-                [1, 1, 1, 1, 1, 1]).transpose())
+                [[1, 1, 1, 1, 1, 1]]).transpose())
         else:
             xpbp = np.linalg.solve(np.block([[MFF, MFB], [MBF, MBB]]), (
                     np.block([-CFF, -CFB], [-CBF, -CBB]) @ np.block([[strainp.transpose()], [beta]]) - np.block(
                 [[KFF @ strain.transpose()], [np.zeros((6, 1))]]) + np.block([[RAEROF], [RAEROB]])))
             xp = xpbp[0:ap.NUMele * 4]
-            bp = xpbp[(ap.NUMele * 4):(ap.NUMele * 4 + 6)] * np.array([1, 1, 1, 1, 1, 1]).transpose()
+            bp = xpbp[(ap.NUMele * 4):(ap.NUMele * 4 + 6)] * np.array([[1, 1, 1, 1, 1, 1]]).transpose()
     else:
         xp = - KFF @ strain.transpose() + RAEROF
-        bp = + RAEROB * np.array([1, 1, 1, 1, 1, 1]).transpose()
+        bp = + RAEROB * np.array([[1, 1, 1, 1, 1, 1]]).transpose()
 
     lambdap = FLAMBDA
 
@@ -121,6 +125,6 @@ def dinamicaflex(t, strain, strainp, strainpp, lambd, beta, betap, kinetic, ap, 
     W = -beta[2]
     Hp = U * math.sin(theta) - V * math.sin(phi) * math.cos(theta) - W * math.cos(phi) * math.cos(theta)
 
-    kineticp = np.array([[thetap], [phip], [psip], [Hp]])
+    kineticp = np.array([thetap, phip, psip, Hp])
 
     return xp, bp, lambdap, kineticp

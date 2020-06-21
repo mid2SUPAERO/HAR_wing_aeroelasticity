@@ -26,6 +26,10 @@ class Engine:
                 [[cos(self.betaf), -sin(self.betaf), 0], [sin(self.betaf), cos(self.betaf), 0], [0, 0, 1]])
             CBb = np.eye(3) @ Cwb
 
-            FPROP[int(3 * ap.prop[i].NODEpos): int(3 + 3 * ap.prop[i].NODEpos)] = CBb @ np.array([[0], [
-                manete[ap.prop[i].numPI - 1] * self.Fmax * (U / self.V0) ** self.nv * (rho / self.rho0) ** self.nrho],
+            FPROP[int(3 * (ap.prop[i].NODEpos-1)): int(3 + 3 * (ap.prop[i].NODEpos-1))] = CBb @ np.array([[0], [
+                manete * self.Fmax * (U[0] / self.V0) ** self.nv * (rho / self.rho0) ** self.nrho],
                                                                                             [0]])
+
+        # originally: manete[ap.prop[i].numPI - 1]
+
+        return FPROP

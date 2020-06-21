@@ -12,14 +12,18 @@ def aeroforceandmoment(strain, strainp, strainpp, lambd, beta, betap, membro, Vw
     tao = 15
 
     # TODO talvez de errado
-    F = np.zeros((9 * (membersize + 1), 1))
-    M = np.zeros((9 * (membersize + 1), 1))
-    lambdap = np.zeros((((membersize + 1) * 3 * membro.elementsVector[1].node1.aeroParams.N), 1*membro.elementsVector[1].node1.aeroParams.N)) # TODO *N? checar
+    F = np.zeros((9 * membersize, 1))
+    M = np.zeros((9 * membersize, 1))
+    if membro.elementsVector[1].node1.aeroParams.N == 0:
+        lambdap = np.zeros(((membersize * 3 * membro.elementsVector[1].node1.aeroParams.N), 0))
+    else:
+        lambdap = np.zeros(((membersize * 3 * membro.elementsVector[1].node1.aeroParams.N), 1))
 
     for i in range(0, membersize):
         # Node 1
         N = membro.elementsVector[i].node1.aeroParams.N
-        lambda0 = 0.5 * lambd[(i * N * 3):(N + i * N * 3)] @ membro.elementsVector[i].node1.aeroParams.B
+        lambd4 = lambd[0, (i * N * 3):(N + i * N * 3)]
+        lambda0 = 0.5 * lambd4 @ membro.elementsVector[i].node1.aeroParams.B
         b = membro.elementsVector[i].node1.aeroParams.b
         d = membro.elementsVector[i].node1.aeroParams.a * b
 
@@ -29,15 +33,15 @@ def aeroforceandmoment(strain, strainp, strainpp, lambd, beta, betap, membro, Vw
         Forca, Momento, flambda = getforceandmoment(membro.elementsVector[i].node1.h, pp[(i * 9):(3 + i * 9)],
                                                     thetap[(i * 9): (3 + i * 9)], ppp[(i * 9): (3 + i * 9)],
                                                     thetapp[(i * 9): (3 + i * 9)], lambda0, Vwind, b, rho, d,
-                                                    membro.elementsVector[i].node1.aeroParams,
-                                                    lambd[(i * N * 3):(N + i * N * 3)], deltaflap)
+                                                    membro.elementsVector[i].node1.aeroParams,lambd4, deltaflap)
         F[(i * 9): (3 + i * 9), :] = Forca
         M[(i * 9): (3 + i * 9), :] = Momento
         lambdap[(i * 3 * N): (N + i * 3 * N), :] = flambda
 
         # Node 2
         N = membro.elementsVector[i].node2.aeroParams.N
-        lambda0 = 0.5 * lambd[(N + i * N * 3):(2 * N + i * N * 3)] @ membro.elementsVector[i].node2.aeroParams.B
+        lambd4 = lambd[0, (N + i * N * 3):(2 * N + i * N * 3)]
+        lambda0 = 0.5 * lambd4@ membro.elementsVector[i].node2.aeroParams.B
 
         if lambda0.shape[0] == 0:
             lambda0 = np.array([0])
@@ -48,15 +52,15 @@ def aeroforceandmoment(strain, strainp, strainpp, lambd, beta, betap, membro, Vw
         Forca, Momento, flambda = getforceandmoment(membro.elementsVector[i].node2.h, pp[(3 + i * 9):(6 + i * 9)],
                                                     thetap[(3 + i * 9): (6 + i * 9)], ppp[(3 + i * 9): (6 + i * 9)],
                                                     thetapp[(3 + i * 9): (6 + i * 9)], lambda0, Vwind, b, rho, d,
-                                                    membro.elementsVector[i].node2.aeroParams,
-                                                    lambd[(N + i * N * 3):(2 * N + i * N * 3)], deltaflap)
+                                                    membro.elementsVector[i].node2.aeroParams, lambd4, deltaflap)
         F[(3 + i * 9): (6 + i * 9), :] = Forca
         M[(3 + i * 9): (6 + i * 9), :] = Momento
         lambdap[(N + i * 3 * N): (2 * N + i * 3 * N), :] = flambda
 
         # Node 3
         N = membro.elementsVector[i].node3.aeroParams.N
-        lambda0 = 0.5 * lambd[(2 * N + i * N * 3):(3 * N + i * N * 3)] @ membro.elementsVector[i].node3.aeroParams.B
+        lambd4 = lambd[0, (2 * N + i * N * 3):(3 * N + i * N * 3)]
+        lambda0 = 0.5 * lambd4 @ membro.elementsVector[i].node3.aeroParams.B
         b = membro.elementsVector[i].node3.aeroParams.b
         d = membro.elementsVector[i].node3.aeroParams.a * b
 
@@ -67,7 +71,7 @@ def aeroforceandmoment(strain, strainp, strainpp, lambd, beta, betap, membro, Vw
                                                     thetap[(6 + i * 9): (9 + i * 9)], ppp[(6 + i * 9): (9 + i * 9)],
                                                     thetapp[(6 + i * 9): (9 + i * 9)], lambda0, Vwind, b, rho, d,
                                                     membro.elementsVector[i].node3.aeroParams,
-                                                    lambd[(2 * N + i * N * 3):(3 * N + i * N * 3)], deltaflap)
+                                                    lambd4, deltaflap)
         F[(6 + i * 9): (9 + i * 9), :] = Forca
         M[(6 + i * 9): (9 + i * 9), :] = Momento
         lambdap[(2 * N + i * 3 * N): (3 * N + i * 3 * N), :] = flambda
@@ -124,5 +128,7 @@ def getforceandmoment(h, dotp, dottheta, ddotp, ddottheta, lambda0, Vwind, b, rh
     # TODO checar se tem mais @
     flambda = aero.E1 @ lambd.transpose() * np.linalg.norm(Vwind) / b + aero.E2 * (
                 -ddotz[0] / b) + aero.E3 * ddotalpha[0] + aero.E4 * dotalpha[0] * np.linalg.norm(Vwind) / b
+
+    flambda = flambda.reshape(flambda.shape[0], 1)
 
     return Forca, Momento, flambda

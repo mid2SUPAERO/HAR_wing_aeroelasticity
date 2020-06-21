@@ -67,13 +67,13 @@ def getExpG(strain, length):  # eq A8
     lamb = math.sqrt(lamb2)
 
     if lamb2 > 1e-10:
-        a = (length / lamb2 - math.sin(lamb * length) / lamb ** 3)
+        a = (length / lamb2 - math.sin(lamb * length) / (lamb ** 3))
         b = (1 - math.cos(lamb * length)) / lamb2
         c = length
 
     else:
-        a = length ** 3 / 6
-        b = length ** 2 / 2
+        a = (length ** 3) / 6
+        b = (length ** 2) / 2
         c = length
 
     expGast = a * KEps3 + b * KEps2 + c * KEps + np.eye(4)
@@ -93,11 +93,11 @@ def getExpG(strain, length):  # eq A8
     expG = Th @ makeDiag(expGast) @ Th.transpose()
 
     if lamb2 > 1e-10:
-        dbdEps = (lamb * length * math.sin(lamb * length) - 2 * (1 - math.cos(lamb * length))) / lamb ** 4 * np.block(
+        dbdEps = (lamb * length * math.sin(lamb * length) - 2 * (1 - math.cos(lamb * length))) / (lamb ** 4) * np.block(
             [[0 * np.eye(4)], [kx * np.eye(4)], [ky * np.eye(4)], [kz * np.eye(4)]])
 
-        dadEps = (3 * math.sin(lamb * length) / lamb ** 5 - (
-                2 * length + length * math.cos(lamb * length)) / lamb ** 4) * np.block(
+        dadEps = (3 * math.sin(lamb * length) / (lamb ** 5) - (
+                2 * length + length * math.cos(lamb * length)) / (lamb ** 4)) * np.block(
             [[0 * np.eye(4)], [kx * np.eye(4)], [ky * np.eye(4)], [kz * np.eye(4)]])
 
     else:
