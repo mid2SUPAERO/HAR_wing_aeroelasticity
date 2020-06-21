@@ -50,9 +50,9 @@ def plotaest3d(member, translate, ax, option = 'surface'):
 
         ax.set_title('Aircraft wing deformation in flight')
 
-        ax.set_xlim3d(-20, 20)
+        # ax.set_xlim3d(-20, 20)
         ax.set_ylim3d(-5, 5)
-        ax.set_zlim3d(0, 1.5)
+        # ax.set_zlim3d(0, 1.5)
 
         if option == 'surface':
             surf = ax.plot_surface(X, Y, Z, rstride=1, cstride=1, cmap='viridis')

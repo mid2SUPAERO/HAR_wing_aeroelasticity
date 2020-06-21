@@ -8,7 +8,7 @@ from getJhbp import getJhpb
 from aeroforceandmoment import aeroforceandmoment
 
 
-def dinamicaflex(t, strain, strainp, strainpp, lambd, beta, betap, kinetic, ap, V, manete, deltaflap, FLAG):
+def dinamicaflex(t, strain, strainp, strainpp, lambd, beta, betap, kinetic, ap, V, manete, deltaflap, FLAG, freeDEG=np.array([[1, 1, 1, 1, 1, 1]])):
     kinetic = kinetic.reshape(4)
 
     H = kinetic[3]
@@ -100,17 +100,16 @@ def dinamicaflex(t, strain, strainp, strainpp, lambd, beta, betap, kinetic, ap, 
             xp = np.linalg.solve(MFF, (
                     -MFB @ betap - CFB @ beta - CFF @ strainp.transpose() - KFF @ strain.transpose() + RAEROF))
             bp = np.linalg.solve(MBB, (
-                    -MBF @ strainpp.transpose() - CBF @ strainp.transpose() - CBB @ beta + RAEROB) * np.array(
-                [[1, 1, 1, 1, 1, 1]]).transpose())
+                    -MBF @ strainpp.transpose() - CBF @ strainp.transpose() - CBB @ beta + RAEROB) * freeDEG.transpose())
         else:
             xpbp = np.linalg.solve(np.block([[MFF, MFB], [MBF, MBB]]), (
                     np.block([-CFF, -CFB], [-CBF, -CBB]) @ np.block([[strainp.transpose()], [beta]]) - np.block(
                 [[KFF @ strain.transpose()], [np.zeros((6, 1))]]) + np.block([[RAEROF], [RAEROB]])))
             xp = xpbp[0:ap.NUMele * 4]
-            bp = xpbp[(ap.NUMele * 4):(ap.NUMele * 4 + 6)] * np.array([[1, 1, 1, 1, 1, 1]]).transpose()
+            bp = xpbp[(ap.NUMele * 4):(ap.NUMele * 4 + 6)] * freeDEG.transpose()
     else:
         xp = - KFF @ strain.transpose() + RAEROF
-        bp = + RAEROB * np.array([[1, 1, 1, 1, 1, 1]]).transpose()
+        bp = + RAEROB * freeDEG.transpose()
 
     lambdap = FLAMBDA
 

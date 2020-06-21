@@ -22,7 +22,7 @@ def veclin(i, numstates):
     return vec
 
 
-def equilibracorpo(vec, strain, strainp, strainpp, lambd, beta, betap, kinetic, ap, V):
+def equilibracorpo(vec, strain, strainp, strainpp, lambd, beta, betap, kinetic, ap, V, freeDEG):
     theta = vec[0]
     deltaflap = vec[1]
     tracao = vec[2]
@@ -33,23 +33,23 @@ def equilibracorpo(vec, strain, strainp, strainpp, lambd, beta, betap, kinetic, 
 
     FLAG = 0
     Xp, bp, lambdap, kp = dinamicaflex(0, strain, strainp, strainpp, lambd, beta, betap, kinetic, ap, Vento, tracao,
-                                       np.array([deltaflap, 0, 0]), FLAG)
+                                       np.array([deltaflap, 0, 0]), FLAG, freeDEG)
     zero = 10000 * np.array([bp[1], bp[2], bp[3]])
     zero = zero[:, 0]
 
     return zero
 
 
-def equilibraestrutura(strain, strainp, strainpp, lambd, beta, betap, kinetic, ap, V, tracao, deltaflap):
+def equilibraestrutura(strain, strainp, strainpp, lambd, beta, betap, kinetic, ap, V, tracao, deltaflap, freeDEG):
     FLAG = 0
     Xp, bp, lambdap, kp = dinamicaflex(0, strain, strainp, strainpp,
-                                       lambd, beta, betap, kinetic, ap, V, tracao, deltaflap, FLAG)
+                                       lambd, beta, betap, kinetic, ap, V, tracao, deltaflap, FLAG,freeDEG)
     zero = Xp[:, 0]
 
     return zero
 
 
-def equilibratudo(vec, strain, strainp, strainpp, lambd, beta, betap, kinetic, ap, V, tracao, deltaflap):
+def equilibratudo(vec, strain, strainp, strainpp, lambd, beta, betap, kinetic, ap, V, tracao, deltaflap, freeDEG):
     strain = vec[0:strainp.shape[1]]
     theta = vec[strainp.shape[1] + 1]
     deltaflap = vec[strainp.shape[1] + 2]
@@ -61,7 +61,7 @@ def equilibratudo(vec, strain, strainp, strainpp, lambd, beta, betap, kinetic, a
 
     FLAG = 0
     Xp, bp, lambdap = dinamicaflex(0, strain, strainp, strainpp,
-                                   lambd, beta, betap, kinetic, ap, V, tracao, deltaflap, FLAG)
+                                   lambd, beta, betap, kinetic, ap, V, tracao, deltaflap, FLAG, freeDEG)
     zero = np.array([[Xp], [bp[2]], [bp[3]], [bp[4]]])
 
     return zero
@@ -74,6 +74,7 @@ def dinamicaflexODEimplicit(t, x, xp):
     deltaflap = airplaneParams[3]
     T = airplaneParams[4]
     elev = airplaneParams[5]
+    freeDEG = airplaneParams[6]
 
     deltaflap = deltaflap + interp1d(T, elev)(t)
 
@@ -97,7 +98,7 @@ def dinamicaflexODEimplicit(t, x, xp):
     strainppn, bpn, lambdapn, kineticpn = dinamicaflex(t, strain.transpose(), strainp.transpose(),
                                                        strainpp.transpose(), lambd, beta, betap,
                                                        kinetic.transpose(), ap, V, manete, np.array([deltaflap, 0, 0]),
-                                                       FLAG)
+                                                       FLAG, freeDEG)
 
     if ap.NUMaedstates == 0:
         f = np.block([[(-strainpn + strainp)], [(strainppn - strainpp)], [(bpn - betap)], [(kineticpn - kineticp)]])
@@ -279,8 +280,7 @@ class Airplane:
     def airplanemovie(self):  # ah mas vai pass ar ainda por muito tempo
         pass
 
-    def linearize(self, straineq, betaeq, keq, manete, deltaflap, Vwind, T=np.array([0, 1]), elev=np.array([0, 0])):
-        print('linearize')
+    def linearize(self, straineq, betaeq, keq, manete, deltaflap, Vwind, freeDEG, T=np.array([0, 1]), elev=np.array([0, 0])):
         global airplaneParams
         if self.NUMaedstates == 0:
             lambda0 = np.array([])
@@ -290,7 +290,7 @@ class Airplane:
         Airplane.update(self, straineq, straineq * 0, straineq * 0, lambda0)
         Airplane.updateStrJac(self)
 
-        airplaneParams = [self, Vwind, manete, deltaflap, T, elev]
+        airplaneParams = [self, Vwind, manete, deltaflap, T, elev, freeDEG]
 
         if straineq.shape[0] != 1:
             straineq = straineq.reshape(1, straineq.shape[0])
@@ -308,12 +308,12 @@ class Airplane:
             soma = dinamicaflexODEimplicit(0, x + veclin(i, x.shape[0]).transpose() * delta, xp)
             subtr = dinamicaflexODEimplicit(0, x - veclin(i, x.shape[0]).transpose() * delta, xp)
 
-            if (i >= (straineq.shape[1] + 1)) and (i <= (straineq.shape[1] * 2)) or (
-                    (i >= int(self.NUMaedstates) + straineq.shape[1] * 2 + 1) and (
-                    i <= int(self.NUMaedstates) + straineq.shape[1] * 2 + 6)):  # TODO talvez precise alterar esse i
+            if (i >= (straineq.shape[1])) and (i <= (straineq.shape[1] * 2 - 1)) or (
+                    (i >= int(self.NUMaedstates) + straineq.shape[1] * 2) and (
+                    i <= int(self.NUMaedstates) + straineq.shape[1] * 2 + 5)):  # TODO talvez precise alterar esse i
                 somap = dinamicaflexODEimplicit(0, x, xp + veclin(i, x.shape[0]).transpose() * delta)
                 subtrp = dinamicaflexODEimplicit(0, x, xp - veclin(i, x.shape[0]).transpose() * delta)
-                Mlin[:, i] = -((somap - subtrp) / (2 * delta))[:, 0]
+                Mlin[:, i] = (-(somap - subtrp) / (2 * delta))[:, 0]
 
             Alin[:, i] = ((soma - subtr) / (2 * delta))[:, 0]
 
@@ -330,8 +330,7 @@ class Airplane:
 
         return A, Aaero, Abody
 
-    def trimairplane(self, V, H, Vwind, tracao=0, deltaflap=0, isPinned = 'False'):
-        print('trimairplane')
+    def trimairplane(self, V, H, Vwind, tracao=0, deltaflap=0, freeDEG=np.array([[1, 1, 1, 1, 1, 1]]), isPinned='False'):
         strain = np.zeros((self.NUMele * 4, 1)).transpose()
         strainp = np.zeros((self.NUMele * 4, 1)).transpose()
         strainpp = np.zeros((self.NUMele * 4, 1)).transpose()
@@ -347,9 +346,8 @@ class Airplane:
         kinetic = np.array([theta, phi, psi, H])
 
         if isPinned == 'False':
-            print('entering fsolve equilibra corpo')
             vec = fsolve(equilibracorpo, np.array([[0, 0, 0]]),
-                         args=(strain, strainp, strainpp, lambd, beta, betap, kinetic, self, V),
+                         args=(strain, strainp, strainpp, lambd, beta, betap, kinetic, self, V, freeDEG),
                          xtol=1e-10, maxfev=20000)
             theta = vec[0]
             kinetic[0] = theta
@@ -357,10 +355,9 @@ class Airplane:
             tracao = vec[2]
             beta[2] = -V * math.sin(theta)
             beta[1] = V * math.cos(theta)
-            print('entering fsolve equilibra est')
             strainEQ = fsolve(equilibraestrutura, strain,
                               args=(strainp, strainpp, lambd, beta, betap, kinetic, self, Vwind, tracao,
-                                    np.array([deltaflap, 0, 0])),
+                                    np.array([deltaflap, 0, 0]), freeDEG),
                               xtol=1e-10, maxfev=20000)
         else:
             theta = 0
@@ -370,7 +367,7 @@ class Airplane:
             beta[1] = 0 * math.cos(theta)
             strainEQ = fsolve(equilibraestrutura, strain,
                               args=(strainp, strainpp, lambd, beta, betap, kinetic, self, Vwind, tracao,
-                                    np.array([deltaflap, 0, 0])),
+                                    np.array([deltaflap, 0, 0]), freeDEG),
                               xtol=1e-10, maxfev=20000)
 
         Airplane.plotAirplane3D(self)
@@ -380,8 +377,7 @@ class Airplane:
     def trimairplanefull(self):  # TODO necessario? prefiro usar so esse ou o full
         pass
 
-    def simulate(self, tspan, strain0, beta0, kinetic0, Vwind, manete, deltaflap, T, elev):
-        print('simulate')
+    def simulate(self, tspan, strain0, beta0, kinetic0, Vwind, manete, deltaflap, T, elev, freeDEG):
         global airplaneParams
         strain0 = strain0.reshape(strain0.shape[0], 1)
         x0 = np.block(
@@ -394,7 +390,7 @@ class Airplane:
         # t,X = ode15i( @ (t, x, xp) dinamicaflexODEimplicit(t, x, xp, ap, Vwind, manete(t), deltaflap(t)), tspan, x0, xp0, options);
 
         t0 = tspan[0]  # Initial time
-        airplaneParams = [self, Vwind, manete, deltaflap, T, elev]
+        airplaneParams = [self, Vwind, manete, deltaflap, T, elev, freeDEG]
 
         model = Implicit_Problem(dinamicaflexODEimplicit, t0=t0, y0=x0, yd0=xp0,
                                  name='Flight simulation')  # Create an Assimulo problem

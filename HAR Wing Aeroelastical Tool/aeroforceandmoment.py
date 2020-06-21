@@ -23,6 +23,10 @@ def aeroforceandmoment(strain, strainp, strainpp, lambd, beta, betap, membro, Vw
         # Node 1
         N = membro.elementsVector[i].node1.aeroParams.N
         lambd4 = lambd[0, (i * N * 3):(N + i * N * 3)]
+
+        if lambd4.shape[0] != 1:
+            lambd4 = lambd4.reshape(1, lambd4.shape[0])
+
         lambda0 = 0.5 * lambd4 @ membro.elementsVector[i].node1.aeroParams.B
         b = membro.elementsVector[i].node1.aeroParams.b
         d = membro.elementsVector[i].node1.aeroParams.a * b
@@ -80,9 +84,14 @@ def aeroforceandmoment(strain, strainp, strainpp, lambd, beta, betap, membro, Vw
 
 
 def getforceandmoment(h, dotp, dottheta, ddotp, ddottheta, lambda0, Vwind, b, rho, d, aero, lambd, deltaflap):
-    e1 = np.array([1, 0, 0]).transpose()
-    e2 = np.array([0, 1, 0]).transpose()
-    e3 = np.array([0, 0, 1]).transpose()
+    e1 = np.array([[1, 0, 0]]).transpose()
+    e2 = np.array([[0, 1, 0]]).transpose()
+    e3 = np.array([[0, 0, 1]]).transpose()
+
+    dotp = dotp.reshape(dotp.shape[0], 1)
+    dottheta = dottheta.reshape(dottheta.shape[0], 1)
+    ddotp = ddotp.reshape(ddotp.shape[0], 1)
+    ddottheta = ddottheta.reshape(ddottheta.shape[0], 1)
 
     if aero.ndelta > 0:
         delta = deltaflap[aero.ndelta - 1]  # TODO verificar o -1
@@ -122,9 +131,12 @@ def getforceandmoment(h, dotp, dottheta, ddotp, ddottheta, lambda0, Vwind, b, rh
 
     Forca = CBA @ np.array([[0], [D], [L]])
     Mx = M + (d + 0.5 * b) * (L * cos(alphat + alpha0) - D * sin(alphat + alpha0))
-    Momento = CBA @ np.array([[Mx], [0], [0]])
+    Momento = CBA @ np.array([Mx, [0], [0]])
 
     Vwind = doty
+    if lambd.shape[0] != 1:
+        lambd = lambd.reshape(1, lambd.shape[0])
+
     # TODO checar se tem mais @
     flambda = aero.E1 @ lambd.transpose() * np.linalg.norm(Vwind) / b + aero.E2 * (
                 -ddotz[0] / b) + aero.E3 * ddotalpha[0] + aero.E4 * dotalpha[0] * np.linalg.norm(Vwind) / b

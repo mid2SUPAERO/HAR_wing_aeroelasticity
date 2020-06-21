@@ -179,15 +179,16 @@ if __name__ == '__main__':
     Vwind = 10
 
     isPinned = 'True'
+    freeDEG = np.array([[0, 0, 0, 0, 0, 0]])
 
-    rb_eq, strain_eq = ap.trimairplane(V, altitude, Vwind, throttle, deltaflap,isPinned)
+    rb_eq, strain_eq = ap.trimairplane(V, altitude, Vwind, throttle, deltaflap,freeDEG, isPinned)
 
     theta = rb_eq[0]
     deltaflap = rb_eq[1]
     engine_position = rb_eq[2]
 
     # flutter speed - undeformed(Linear)
-    flut_speed, flut_eig_val, flut_eig_vec = flutter_speed(20, 35, 0.01, ap, strain_eq * 0, altitude)
+    flut_speed, flut_eig_val, flut_eig_vec = flutter_speed(20, 35, 0.01, ap, strain_eq * 0, altitude, freeDEG)
 
     print('flutter speed:')
     print(flut_speed)
@@ -195,7 +196,7 @@ if __name__ == '__main__':
     print(flut_eig_val)
 
     # flutter speed - deformed(Nonlinear)
-    flut_speed, flut_eig_val, flut_eig_vec = flutter_speed(20, 35, 0.01, ap, strain_eq, altitude)
+    flut_speed, flut_eig_val, flut_eig_vec = flutter_speed(20, 35, 0.01, ap, strain_eq, altitude, freeDEG)
 
     print('flutter speed:')
     print(flut_speed)
@@ -215,7 +216,7 @@ if __name__ == '__main__':
     # Vwind = 0
     #
     # tNL, strainNL, straindNL, lambdaNL, betaNL, kineticNL = ap.simulate(np.array([0, tSim]), strain0, beta0, k0, Vwind,
-    #                                                                     engine_position, deltaflap, T, elev)
+    #                                                                     engine_position, deltaflap, T, elev, freeDEG)
     #
     # dt = 0.1
     # ts, Xs = changedatarate(tNL, strainNL, dt)

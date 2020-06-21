@@ -2,7 +2,7 @@ import numpy as np
 from numpy.linalg import eig
 
 
-def flutter_speed(Vwind_initial, Vwind_final, tol, ap, strain_eq, altitude, T=np.array([0, 1]), elev=np.array([0, 0])):
+def flutter_speed(Vwind_initial, Vwind_final, tol, ap, strain_eq, altitude, freeDEG, T=np.array([0, 1]), elev=np.array([0, 0])):
     throttle = 0
     deltaflap = 0
     betaeq = np.zeros((6, 1))
@@ -12,7 +12,7 @@ def flutter_speed(Vwind_initial, Vwind_final, tol, ap, strain_eq, altitude, T=np
     unstable_eig_value = None
     unstable_eig_vec = None
 
-    dummy, Aaeroelast, dummy = ap.linearize(strain_eq, betaeq, keq, throttle, deltaflap, Vwind_initial, T, elev)
+    _, Aaeroelast, _ = ap.linearize(strain_eq, betaeq, keq, throttle, deltaflap, Vwind_initial, freeDEG, T, elev)
 
     eig_val_initial, eig_vec_initial = eig(Aaeroelast)
 
@@ -22,7 +22,7 @@ def flutter_speed(Vwind_initial, Vwind_final, tol, ap, strain_eq, altitude, T=np
     if np.max(eig_val_initial.real) > 0:
         print('Initial speed is already unstable! \n Cant find instability speed in this interval ')
     else:
-        dummy, Aaeroelast, dummy = ap.linearize(strain_eq, betaeq, keq, throttle, deltaflap, Vwind_final, T, elev)
+        _, Aaeroelast, _= ap.linearize(strain_eq, betaeq, keq, throttle, deltaflap, Vwind_final, freeDEG, T, elev)
 
         eig_val_final, eig_vec_final = eig(Aaeroelast)
 
@@ -33,7 +33,7 @@ def flutter_speed(Vwind_initial, Vwind_final, tol, ap, strain_eq, altitude, T=np
             Vnew = (Vwind_final + Vwind_initial) / 2
 
             while diff > tol:
-                dummy, Aaeroelast, dummy = ap.linearize(strain_eq, betaeq, keq, throttle, deltaflap, Vnew)
+                dummy, Aaeroelast, dummy = ap.linearize(strain_eq, betaeq, keq, throttle, deltaflap, Vnew, freeDEG, T, elev)
 
                 eig_val, eig_vec = eig(Aaeroelast)
                 eig_val = np.diag(eig_val)

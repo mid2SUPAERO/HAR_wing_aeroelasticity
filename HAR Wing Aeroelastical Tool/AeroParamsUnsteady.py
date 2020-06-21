@@ -34,6 +34,10 @@ class AeroParamsUnsteady:
         self.E3 = np.linalg.inv(self.A) @ self.B1[:, 1]
         self.E4 = np.linalg.inv(self.A) @ self.B2[:, 1]
 
+        self.E2 = self.E2.reshape(self.E2.shape[0], 1)
+        self.E3 = self.E3.reshape(self.E3.shape[0], 1)
+        self.E4 = self.E4.reshape(self.E4.shape[0], 1)
+
     # ------------- # ------------- METHODS ------------- # ------------- #
     # TODO criar setmembermatrix em members, esta em Peter.m necessario?
     def calcMatrix(self):  # eq 2.63
@@ -60,18 +64,18 @@ class AeroParamsUnsteady:
         c2 = np.zeros((self.N, 1))
 
         for i1 in range(0, self.N):
-            c2[i1] = 2. / (i1+1)
+            c2[i1, 0] = 2. / (i1 + 1)
 
         s2 = np.zeros((self.m, 1))
-        s3 = s2
+        s3 = s2.copy()
 
         for i1 in range(0, self.m):
-            if i1 == 0:  # TODO isso faz sentido?
-                s2[i1] = 1
+            if i1 == 0:
+                s2[i1, 0] = 1
             elif i1 == 1:
-                s2[i1] = 1. / 2
+                s2[i1, 0] = 1 / 2
 
-            s3[i1] = i1
+            s3[i1, 0] = i1
 
         self.B1 = c2 @ s2.transpose() @ self.T
         self.B2 = c2 @ s3.transpose() @ self.T
@@ -86,23 +90,22 @@ class AeroParamsUnsteady:
         for i1 in range(0, self.N):
             for i2 in range(0, self.N):
                 if i1 == i2 + 1:
-                    D[i1, i2] = 1 / (2 * (i1+1))
+                    D[i1, i2] = 1 / (2 * (i1 + 1))
                 elif i1 == i2 - 1:
-                    D[i1, i2] = -1 / (2 * (i1+1))
+                    D[i1, i2] = -1 / (2 * (i1 + 1))
 
-            if i1 != self.N-1:
-                b[i1] = ((-1) ** i1) * (math.factorial(self.N + i1) / math.factorial(self.N - 2 - i1)) * (
-                        1 / math.factorial(i1+1) ** 2)
+            if i1 != self.N - 1:
+                b[i1, 0] = ((-1) ** i1) * (math.factorial(self.N + i1) / math.factorial(self.N - 2 - i1)) * (
+                        1 / math.factorial(i1 + 1) ** 2)
 
-            if i1 == self.N-1:  # TODO else?
-                b[i1] = (-1) ** (self.N + 1)
+            if i1 == self.N - 1:  # TODO else?
+                b[i1, 0] = (-1) ** (self.N + 1)
 
-            c[i1] = 2 / (i1 + 1)
+            c[i1, 0] = 2 / (i1 + 1)
 
             if i1 == 0:  # TODO faz sentido? necessario?
-                d[i1] = 1. / 2
+                d[i1, 0] = 1. / 2
 
         self.B = b
         self.Bm = 1 / 2 * self.C @ np.block([[1], [np.zeros((self.m - 1, 1))]]) @ b.transpose()  # TODO esta certo?
         self.A = D + d @ b.transpose() + c @ d.transpose() + (1 / 2) * c @ b.transpose()
-
