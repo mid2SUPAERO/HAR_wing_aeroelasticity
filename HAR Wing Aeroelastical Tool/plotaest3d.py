@@ -48,11 +48,13 @@ def plotaest3d(member, translate, ax, option = 'surface'):
             Z[i, 1] = deflexao[2, i] + translate[2]
             Z[i, 2] = deflexao[2, i] + deflexao[8, i] * (b * a - b) + translate[2]
 
-        ax.set_title('Aircraft wing deformation in flight')
+        # ax.set_title('Aircraft wing deformation in flight')
 
         # ax.set_xlim3d(-20, 20)
-        ax.set_ylim3d(-5, 5)
+        ax.set_ylim3d(-8*np.max(Y), 8*np.max(Y))
         # ax.set_zlim3d(0, 1.5)
+        
+        ax.set_zlabel('Displacement (m)')
 
         if option == 'surface':
             surf = ax.plot_surface(X, Y, Z, rstride=1, cstride=1, cmap='viridis')

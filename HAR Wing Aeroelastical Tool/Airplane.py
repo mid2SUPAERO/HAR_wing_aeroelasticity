@@ -295,7 +295,11 @@ class Airplane:
         if straineq.shape[0] != 1:
             straineq = straineq.reshape(1, straineq.shape[0])
 
-        x = np.block([[straineq.transpose()], [np.zeros(np.shape(straineq.transpose()))], [lambda0], [betaeq], [keq]])
+        if lambda0.shape[0] == 0:
+            x = np.block([[straineq.transpose()], [np.zeros(np.shape(straineq.transpose()))], [betaeq], [keq]])
+        else:
+            x = np.block([[straineq.transpose()], [np.zeros(np.shape(straineq.transpose()))], [lambda0], [betaeq], [keq]])
+
         xp = np.zeros(np.shape(x))
 
         delta = 1e-9

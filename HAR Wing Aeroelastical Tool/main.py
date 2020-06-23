@@ -73,9 +73,9 @@ def create_flexible_member(num_elements, damp_ratio):
 
     CG = damp_ratio * np.diag([K11, K22, K33, K44])
 
-    pos_cg = np.array([0, 0.0, 0])
+    pos_cg = np.array([0, 0.3, 0])
 
-    geometry = np.array([0.0, 0.5])
+
 
     I22 = 0.0
     I33 = 0.1
@@ -86,80 +86,84 @@ def create_flexible_member(num_elements, damp_ratio):
     # aerodynamic data
     c = 1
     b = c / 2
-    N = 4
+    N = 0
     a = 0.0
-    alpha0 = -0 * np.pi / 180
+    alpha0 = -5 * np.pi / 180
     clalpha = 2 * np.pi
     cm0 = 0
     cd0 = 0.02
-    ndelta = 0
-    cldelta = 0.0
-    cmdelta = -0.0
+    ndelta = 1
+    cldelta = 0.01
+    cmdelta = -0.1
+
+    geometry = np.array([a, b])
 
     aero_right = AeroParams(b, N, a, alpha0, clalpha, cm0, cd0, ndelta, cldelta, cmdelta)
 
-    rot0_right = Rot(dihedral=0, sweep=0, twist=0)
+    rot0_right = Rot(dihedral=0, sweep=0*pi/180, twist=1*pi/180)
 
-    flexible_member = create_uniform_structure(pos_cg, rot0_right, Length, Inertia, mcs, KG, CG, aero_right, geometry,
+    right_wing = create_uniform_structure(pos_cg, rot0_right, Length, Inertia, mcs, KG, CG, aero_right, geometry,
                                           num_elements)
 
-    # # aerodynamic data
-    # c = 1
-    # b = c / 2
-    # N = 0
-    # a = 0.0
-    # alpha0 = 5 * np.pi / 180
-    # clalpha = 2 * np.pi
-    # cm0 = 0
-    # cd0 = 0.02
-    # ndelta = 1
-    # cldelta = -0.01
-    # cmdelta = 0.1
-    #
-    # aero_left = AeroParams(b, N, a, alpha0, clalpha, cm0, cd0, ndelta, cldelta, cmdelta)
-    #
-    # rot0_left = Rot(dihedral=pi, sweep=0, twist=0)
-    #
-    # left_wing = create_uniform_structure(pos_cg, rot0_left, Length, Inertia, mcs, KG, CG, aero_left, geometry,
-    #                                      num_elements)
+    # aerodynamic data
+    c = 1
+    b = c / 2
+    N = 0
+    a = 0.0
+    alpha0 = 5 * np.pi / 180
+    clalpha = 2 * np.pi
+    cm0 = 0
+    cd0 = 0.02
+    ndelta = 1
+    cldelta = -0.01
+    cmdelta = 0.1
 
-    return flexible_member
+    geometry = np.array([a, b])
+
+    aero_left = AeroParams(b, N, a, alpha0, clalpha, cm0, cd0, ndelta, cldelta, cmdelta)
+
+    rot0_left = Rot(dihedral=pi, sweep=0*pi/180, twist=-1*pi/180)
+
+    left_wing = create_uniform_structure(pos_cg, rot0_left, Length, Inertia, mcs, KG, CG, aero_left, geometry,
+                                         num_elements)
+
+    return right_wing,left_wing
 
 
 def load_structure(num_elem, damp_ratio):
-    # right_wing, left_wing = create_flexible_member(num_elem, damp_ratio)
-    #
-    # right_wing.elementsVector[0].setH0(np.array([[0], [-0.3], [0], [1], [0], [0], [0], [1], [0], [0], [0], [1]]))
-    # left_wing.elementsVector[0].setH0(np.array([[0], [-0.3], [0], [1], [0], [0], [0], [1], [0], [0], [0], [1]]))
-    # right_wing.update()
-    # left_wing.update()
-    #
-    # fus = Fuselage(m=10, pcm=np.array([0, 0, 0]), I=np.zeros((3, 3)) + 0 * np.array([[0, 0, 0], [0, 0, 0], [0, 0, 0]]))
-    #
-    # Fmax = 1
-    # V0 = 1
-    # rho0 = 1
-    # nv = -1
-    # nrho = 0
-    # alphaf = 0
-    # betaf = 0
-    # numPI = 1
-    # numMEMB = 1
-    # numELEM = 1
-    # numNODE = 1
-    #
-    # motor1 = Engine(numPI, numMEMB, numELEM, numNODE, Fmax, rho0, V0, nrho, nv, alphaf, betaf)
-    #
-    # airp = Airplane(np.array([right_wing, left_wing]), np.array([motor1]), fus)
+    right_wing, left_wing = create_flexible_member(num_elem, damp_ratio)
 
-    flexible_member = create_flexible_member(numele, damp_ratio)
+    right_wing.elementsVector[0].setH0(np.array([[0], [-0.3], [0], [1], [0], [0], [0], [1], [0], [0], [0], [1]]))
+    left_wing.elementsVector[0].setH0(np.array([[0], [-0.3], [0], [1], [0], [0], [0], [1], [0], [0], [0], [1]]))
+    right_wing.update()
+    left_wing.update()
 
-    flexible_member.elementsVector[0].setH0(np.array([[0], [-0.0], [0], [1], [0], [0], [0], [1], [0], [0], [0], [1]]))
-    flexible_member.update()
+    fus = Fuselage(m=10, pcm=np.array([0, 0, 0]), I=np.zeros((3, 3)) + 0 * np.array([[0.2**2*10, 0, 0], [0, 0, 0], [0, 0, 0.2**2*10]]))
 
-    fus = Fuselage(m=0, pcm=np.array([0, 0, 0]), I=np.zeros((3, 3)) + 0 * np.array([[0, 0, 0], [0, 0, 0], [0, 0, 0]])) # no fuselage
-    motor1 = Engine(0, 0, 0, 0) # no engines
-    airp = Airplane(np.array([flexible_member]), np.array([motor1]), fus)
+    Fmax = 1
+    V0 = 1
+    rho0 = 1
+    nv = -1
+    nrho = 0
+    alphaf = 0
+    betaf = 0
+    numPI = 1
+    numMEMB = 1
+    numELEM = 1
+    numNODE = 1
+
+    motor1 = Engine(numPI, numMEMB, numELEM, numNODE, Fmax, rho0, V0, nrho, nv, alphaf, betaf)
+
+    airp = Airplane(np.array([right_wing, left_wing]), np.array([motor1]), fus)
+
+    # flexible_member = create_flexible_member(numele, damp_ratio)
+    #
+    # flexible_member.elementsVector[0].setH0(np.array([[0], [-0.0], [0], [1], [0], [0], [0], [1], [0], [0], [0], [1]]))
+    # flexible_member.update()
+    #
+    # fus = Fuselage(m=0, pcm=np.array([0, 0, 0]), I=np.zeros((3, 3)) + 0 * np.array([[0, 0, 0], [0, 0, 0], [0, 0, 0]])) # no fuselage
+    # motor1 = Engine(0, 0, 0, 0) # no engines
+    # airp = Airplane(np.array([flexible_member]), np.array([motor1]), fus)
 
     return airp
 
@@ -168,18 +172,18 @@ if __name__ == '__main__':
     # Airplane Initialization
 
     numele = 3
-    damping = 0.0001
+    damping = 0.04
     ap = load_structure(numele, damping)
 
     # Finds Equilibrium Condition
     altitude = 19931.7
-    V = 0
+    V = 10
     throttle = 0
     deltaflap = 0
-    Vwind = 10
+    Vwind = 0
 
-    isPinned = 'True'
-    freeDEG = np.array([[0, 0, 0, 0, 0, 0]])
+    isPinned = 'False'
+    freeDEG = np.array([[1, 1, 1, 1, 1, 1]])
 
     rb_eq, strain_eq = ap.trimairplane(V, altitude, Vwind, throttle, deltaflap,freeDEG, isPinned)
 
@@ -187,21 +191,44 @@ if __name__ == '__main__':
     deltaflap = rb_eq[1]
     engine_position = rb_eq[2]
 
-    # flutter speed - undeformed(Linear)
-    flut_speed, flut_eig_val, flut_eig_vec = flutter_speed(20, 35, 0.01, ap, strain_eq * 0, altitude, freeDEG)
+    manete = rb_eq[2]
+    thetaeq = theta
+    straineq = strain_eq
+    betaeq = np.array([[0, V * cos(thetaeq), - V * sin(thetaeq), 0, 0, 0]]).T
+    keq = np.array([[thetaeq, 0, 0, altitude]]).T
 
-    print('flutter speed:')
-    print(flut_speed)
-    print('flutter eig val:')
-    print(flut_eig_val)
+    # ap.update(strain_eq * 0, np.zeros(strain_eq.shape), np.zeros(strain_eq.shape), np.zeros((int(np.sum(ap.membNAEDtotal)), 1)))
+    # ap.plotAirplane3D()
+    # tip_displacement = ap.members[0].elementsVector[numele-1].node3.h[2]
+    #
+    # print(tip_displacement)
 
+    ap.update(strain_eq, np.zeros(strain_eq.shape), np.zeros(strain_eq.shape), np.zeros((int(np.sum(ap.membNAEDtotal)), 1)))
+    ap.plotAirplane3D()
+    tip_displacement = ap.members[0].elementsVector[numele-1].node3.h[2]
+
+    print(tip_displacement)
+
+# flutter speed - undeformed(Linear)
+
+    # throttle = 0
+    # deltaflap = 0
+    # betaeq = np.zeros((6, 1))
+    # keq = np.array([[0], [0], [0], [altitude]])
+#     flut_speed = flutter_speed(20, 35, 0.01, ap, strain_eq * 0, altitude, betaeq,keq,manete,deltaflap, freeDEG)
+#
+#     print('flutter speed:')
+#     print(flut_speed)
+#     #print('flutter eig val:')
+#     #print(flut_eig_val)
+#
     # flutter speed - deformed(Nonlinear)
-    flut_speed, flut_eig_val, flut_eig_vec = flutter_speed(20, 35, 0.01, ap, strain_eq, altitude, freeDEG)
+    flut_speed = flutter_speed(20, 100, 0.01, ap, strain_eq, altitude, betaeq,keq,manete,deltaflap, freeDEG)
 
     print('flutter speed:')
     print(flut_speed)
-    print('flutter eig val:')
-    print(flut_eig_val)
+    #print('flutter eig val:')
+    #print(flut_eig_val)
 
     # # Nonlinear simulation
     # # Initial conditions
