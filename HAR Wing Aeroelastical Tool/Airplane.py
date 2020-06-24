@@ -374,8 +374,6 @@ class Airplane:
                                     np.array([deltaflap, 0, 0]), freeDEG),
                               xtol=1e-10, maxfev=20000)
 
-        Airplane.plotAirplane3D(self)
-
         return vec, strainEQ
 
     def trimairplanefull(self):  # TODO necessario? prefiro usar so esse ou o full

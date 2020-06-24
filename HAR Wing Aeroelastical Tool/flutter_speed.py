@@ -3,7 +3,7 @@ from numpy.linalg import eig
 
 
 def flutter_speed(Vwind_initial, Vwind_final, tol, ap, strain_eq, altitude, betaeq, keq, throttle, deltaflap, freeDEG, T=np.array([0, 1]), elev=np.array([0, 0])):
-    unstable_speed = None
+    unstable_speed = 1000
     unstable_eig_value = None
     unstable_eig_vec = None
 
@@ -16,6 +16,7 @@ def flutter_speed(Vwind_initial, Vwind_final, tol, ap, strain_eq, altitude, beta
 
     if np.max(eig_val_initial.real) > 0:
         print('Initial speed is already unstable! \n Cant find instability speed in this interval ')
+        unstable_speed = Vwind_initial
     else:
         _, Aaeroelast, _= ap.linearize(strain_eq, betaeq, keq, throttle, deltaflap, Vwind_final, freeDEG, T, elev)
 
@@ -23,7 +24,9 @@ def flutter_speed(Vwind_initial, Vwind_final, tol, ap, strain_eq, altitude, beta
 
         if np.max(eig_val_final.real) < 0:
             print('Final speed is stable! \n Cant find instability speed in this interval! ')
+            unstable_speed = Vwind_final
         else:
+            print('Calculating flutter speed')
             diff = Vwind_final - Vwind_initial
             Vnew = (Vwind_final + Vwind_initial) / 2
 

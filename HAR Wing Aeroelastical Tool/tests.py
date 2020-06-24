@@ -46,9 +46,9 @@ print(noh.aeroParams.B)
 print('-----element------')
 '''
 
-
-def inp(x):
-    return x
+#
+# def inp(x):
+#     return x
 
 
 '''def residual(t, y, yd):
@@ -77,25 +77,24 @@ t, y, yd = sim.simulate(tfinal,
 # Plot the result
 sim.plot()'''
 
-
-def weissinger(t, y, yp, test1):
-    return t * y ** test1(2) * yp ** 3 - y ** 3 * yp ** 2 + t * (t ** 2 + 1) * yp - t ** 2 * y
-
-
-t0 = 1
-y0 = math.sqrt(3 / 2)
-yp0 = 0.8165
-
-model2 = Implicit_Problem(weissinger, y0, yp0, t0, p0=inp())
-model2.name = 'Weissinger'
-sim = IDA(model2)
-
-tfinal = 10
-ncp = 100
-
-t, y, yp = sim.simulate(tfinal, ncp)
-
-sim.plot()
+# def weissinger(t, y, yp, test1):
+#     return t * y ** test1(2) * yp ** 3 - y ** 3 * yp ** 2 + t * (t ** 2 + 1) * yp - t ** 2 * y
+#
+#
+# t0 = 1
+# y0 = math.sqrt(3 / 2)
+# yp0 = 0.8165
+#
+# model2 = Implicit_Problem(weissinger, y0, yp0, t0, p0=inp())
+# model2.name = 'Weissinger'
+# sim = IDA(model2)
+#
+# tfinal = 10
+# ncp = 100
+#
+# t, y, yp = sim.simulate(tfinal, ncp)
+#
+# sim.plot()
 
 '''t = np.arange(0.0, 2.0, 0.01)
 s = 1 + np.sin(2 * np.pi * t)
@@ -134,3 +133,17 @@ surf = ax.plot_surface(X, Y, Z, rstride=1, cstride=1,
                 cmap='viridis')
 
 plt.show()'''
+from aeroelasticProblemFunc import aeroelasticProblemFunc
+
+t = np.array([0.0010001])
+c = np.array([0.3911399])
+L = np.array([4.80474242])
+sweep = np.array([0.04876023])
+twist = np.array([0.01767856])
+
+J, flut_speed, mass, tip_displacement = aeroelasticProblemFunc(t, c, L, sweep, twist)
+
+print(J)
+print(flut_speed)
+print(mass)
+print(tip_displacement)

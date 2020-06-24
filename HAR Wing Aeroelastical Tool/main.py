@@ -75,8 +75,6 @@ def create_flexible_member(num_elements, damp_ratio):
 
     pos_cg = np.array([0, 0.3, 0])
 
-
-
     I22 = 0.0
     I33 = 0.1
     I11 = 0.1
@@ -100,7 +98,7 @@ def create_flexible_member(num_elements, damp_ratio):
 
     aero_right = AeroParams(b, N, a, alpha0, clalpha, cm0, cd0, ndelta, cldelta, cmdelta)
 
-    rot0_right = Rot(dihedral=0, sweep=0*pi/180, twist=1*pi/180)
+    rot0_right = Rot(dihedral=0, sweep=0*pi/180, twist=0*pi/180)
 
     right_wing = create_uniform_structure(pos_cg, rot0_right, Length, Inertia, mcs, KG, CG, aero_right, geometry,
                                           num_elements)
@@ -122,7 +120,7 @@ def create_flexible_member(num_elements, damp_ratio):
 
     aero_left = AeroParams(b, N, a, alpha0, clalpha, cm0, cd0, ndelta, cldelta, cmdelta)
 
-    rot0_left = Rot(dihedral=pi, sweep=0*pi/180, twist=-1*pi/180)
+    rot0_left = Rot(dihedral=pi, sweep=0*pi/180, twist=-0*pi/180)
 
     left_wing = create_uniform_structure(pos_cg, rot0_left, Length, Inertia, mcs, KG, CG, aero_left, geometry,
                                          num_elements)
