@@ -1,6 +1,7 @@
 import numpy as np
 from math import sin, cos, pi
 import matplotlib.pyplot as plt
+import csv
 
 from Airplane import Airplane
 from Structure import Structure
@@ -119,6 +120,28 @@ def load_structure(num_elem, damp_ratio, rho, E, G, c, t, L, rootSweepAng, rootT
 
 
 def aeroelasticProblemFunc(t, c, L, rootSweepAng, rootTwistAng):
+    # with open("c_keep.csv", 'a+', newline='') as write_obj:
+    #     csv_writer = csv.writer(write_obj)
+    #     csv_writer.writerow([c[0]])
+    #
+    # with open("t_keep.csv", 'a+', newline='') as write_obj:
+    #     csv_writer = csv.writer(write_obj)
+    #     csv_writer.writerow([t[0]])
+    #
+    # with open("L_keep.csv", 'a+', newline='') as write_obj:
+    #     csv_writer = csv.writer(write_obj)
+    #     csv_writer.writerow([L[0]])
+    #
+    # with open("sweep_keep.csv", 'a+', newline='') as write_obj:
+    #     csv_writer = csv.writer(write_obj)
+    #     csv_writer.writerow([rootSweepAng[0]])
+
+    with open("twist_keep.csv", 'a+', newline='') as write_obj:
+        csv_writer = csv.writer(write_obj)
+        csv_writer.writerow([rootTwistAng[0]])
+
+
+
     # ---------- Material Properties----------#
     # AL 7075
     rho = 2810  # kg/m³
@@ -157,7 +180,7 @@ def aeroelasticProblemFunc(t, c, L, rootSweepAng, rootTwistAng):
     ap.update(strain_eq, np.zeros(strain_eq.shape), np.zeros(strain_eq.shape),
               np.zeros((int(np.sum(ap.membNAEDtotal)), 1)))
 
-    ap.plotAirplane3D()
+    #ap.plotAirplane3D()
 
     tip_displacement = ap.members[0].elementsVector[numele - 1].node3.h[2]
 
@@ -166,6 +189,10 @@ def aeroelasticProblemFunc(t, c, L, rootSweepAng, rootTwistAng):
 
     J = -flut_speed / 10 + mass / 35.125
 
-    plt.show()
+    with open("J_keep.csv", 'a+', newline='') as write_obj:
+        csv_writer = csv.writer(write_obj)
+        csv_writer.writerow([J])
+
+    #plt.show()
 
     return J, flut_speed, mass, tip_displacement[0]

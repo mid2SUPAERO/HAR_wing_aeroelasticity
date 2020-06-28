@@ -1,6 +1,7 @@
 import openmdao.api as om
+import numpy as np
 from aeroelasticProblemFunc import aeroelasticProblemFunc
-
+import matplotlib.pyplot as plt
 
 class AeroelasticProblem(om.ExplicitComponent):
 
